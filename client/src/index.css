@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+:root {
+  --bg-app: #111827;
+  --bg-panel: #1f2937;
+  --text-main: #ffffff;
+  --text-muted: #9ca3af;
+  --accent: #3b82f6;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark {
+  --bg-app: #0f172a;
+  --bg-panel: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent: #3b82f6;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-lite {
+  --bg-app: #f1f5f9;
+  --bg-panel: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --accent: #0ea5e9;
+  --border-color: rgba(0, 0, 0, 0.1);
+}
+
+.theme-cody {
+  --bg-app: #18181b;
+  --bg-panel: #27272a;
+  --text-main: #fafafa;
+  --text-muted: #a1a1aa;
+  --accent: #14b8a6;
+  --border-color: rgba(255, 255, 255, 0.05);
+}
+
+.theme-love {
+  --bg-app: #fdf2f8;
+  --bg-panel: #fbcfe8;
+  --text-main: #831843;
+  --text-muted: #9d174d;
+  --accent: #ec4899;
+  --border-color: rgba(236, 72, 153, 0.2);
+}
+
+.theme-friendship {
+  --bg-app: #fffbeb;
+  --bg-panel: #fef3c7;
+  --text-main: #78350f;
+  --text-muted: #92400e;
+  --accent: #f59e0b;
+  --border-color: rgba(245, 158, 11, 0.2);
+}
+
+.theme-sad {
+  --bg-app: #f8fafc;
+  --bg-panel: #e2e8f0;
+  --text-main: #1e293b;
+  --text-muted: #475569;
+  --accent: #64748b;
+  --border-color: rgba(100, 116, 139, 0.2);
+}
+
+.theme-happy {
+  --bg-app: #f0fdf4;
+  --bg-panel: #bbf7d0;
+  --text-main: #14532d;
+  --text-muted: #166534;
+  --accent: #22c55e;
+  --border-color: rgba(34, 197, 94, 0.2);
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Explicit styles for standard inputs to fix visibility issues, ignoring styled transparent inputs */
+input:not([type="submit"]):not(.bg-transparent), select, textarea:not(.bg-transparent) {
+  color: #1f2937;
+  background-color: #ffffff;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+select option {
+  color: #1f2937;
+  background-color: #ffffff;
+}
