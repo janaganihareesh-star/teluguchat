@@ -16,6 +16,25 @@ export const AuthProvider = ({ children }) => {
       }
     }
     setLoading(false);
+
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401) {
+          console.warn('Session expired. Logging out.');
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login'; // Redirect to login page
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
   }, [token]);
 
   const login = (userData, jwtToken) => {
@@ -30,6 +49,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('cookieAccepted');
   };
 
   const updateUser = (updatedFields) => {

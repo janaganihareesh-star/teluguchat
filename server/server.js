@@ -21,7 +21,9 @@ const { socketAuth } = require('./middleware/socketAuth');
 // Initialize Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || '*', 
+    origin: process.env.NODE_ENV === 'production' 
+      ? process.env.FRONTEND_URL 
+      : ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174'], 
     methods: ['GET', 'POST'],
   },
 });
@@ -61,15 +63,44 @@ app.use(express.json({ limit: '10kb' })); // Limit body size against payload spo
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Data sanitization against NoSQL query injection
-// app.use(mongoSanitize()); // Disabled: Incompatible with Express 5.x (req.query is read-only)
-// Data sanitization against XSS
-// app.use(xss()); // Disabled: Incompatible with Express 5.x (req.query is read-only)
+// Manual NoSQL injection sanitization (Express 5 compatible)
+app.use((req, res, next) => {
+  const sanitize = (obj) => {
+    if (obj && typeof obj === 'object') {
+      Object.keys(obj).forEach(key => {
+        if (key.startsWith('$') || key.includes('.')) {
+          delete obj[key];
+        } else {
+          sanitize(obj[key]);
+        }
+      });
+    }
+  };
+  sanitize(req.body);
+  sanitize(req.params);
+  next();
+});
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5000, // Increased limit to prevent blocking during development
+  windowMs: 15 * 60 * 1000,
+  max: 5000,
 });
 app.use('/api', limiter);
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { message: 'Too many attempts. Please try again after 15 minutes.' }
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+const uploadLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  message: { message: 'Too many uploads. Please slow down.' }
+});
+app.use('/api/upload', uploadLimiter);
 
 // Test route
 app.get('/', (req, res) => {
@@ -122,11 +153,71 @@ app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/news', require('./routes/newsRoutes'));
+
+// Initialize Daily News Cron Job
+const initDailyNewsCron = require('./services/dailyNewsCron');
+initDailyNewsCron(app);
+
+// Guest account cleanup — delete guests older than 1 day
+const cron = require('node-cron');
+const User = require('./models/User');
+cron.schedule('0 0 * * *', async () => {
+  try {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const result = await User.deleteMany({ 
+      role: 'guest', 
+      createdAt: { $lt: yesterday } 
+    });
+    console.log(`[Guest Cleanup] Deleted ${result.deletedCount} old guest accounts.`);
+  } catch (err) {
+    console.error('[Guest Cleanup] Error:', err);
+  }
+});
 
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3500;
+let retryCount = 0;
+const MAX_RETRIES = 5;
 
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+const startServer = () => {
+  server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+    retryCount = 0; // reset on success
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      if (retryCount >= MAX_RETRIES) {
+        console.error(`[Error] Port ${PORT} is permanently blocked by another terminal. Please close this duplicate terminal tab!`);
+        process.exit(1);
+      }
+      retryCount++;
+      console.log(`[Warning] Port ${PORT} is in use. Retrying in 3 seconds... (Attempt ${retryCount}/${MAX_RETRIES})`);
+      setTimeout(() => {
+        server.close();
+        startServer();
+      }, 3000);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+};
+
+startServer();
+
+// Graceful shutdown handlers for Nodemon / Terminal
+const gracefulShutdown = (signal) => {
+  console.log(`\nReceived ${signal}. Closing server gracefully...`);
+  server.close(() => {
+    console.log('Server closed.');
+    process.exit(0);
+  });
+};
+
+process.once('SIGUSR2', () => {
+  server.close(() => {
+    process.kill(process.pid, 'SIGUSR2');
+  });
 });
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

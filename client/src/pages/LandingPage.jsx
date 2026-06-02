@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
 
@@ -17,7 +17,6 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ totalUsers: 0, onlineUsers: 0 });
   const [activeFaq, setActiveFaq] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchStats = () => {
@@ -43,7 +42,7 @@ const LandingPage = () => {
     { q: 'How does Telugu Chat work?', a: 'It is completely free! Just click Enter The Chat, choose a registration method or enter as guest, pick a room, and start chatting with thousands of Telugu people worldwide in real-time.' },
     { q: 'How do you prevent spam and abuse?', a: 'We employ advanced Perspective AI text filtration and have active Telugu admins online 24/7. Any user sending vulgar content, offensive slurs, or spam links gets banned instantly.' },
     
-    { q: 'What is the Guest Login restriction?', a: 'Guest mode lets you test the app instantly without an account. However, to prevent spam, guests cannot access private inboxes (DMs), upload images/voice files, .' }
+    { q: 'What is the Guest Login restriction?', a: 'Guest mode lets you test the app instantly without an account. However, to prevent spam, guests cannot access private inboxes (DMs), upload images/voice files, or participate in voice rooms.' }
   ];
 
   return (

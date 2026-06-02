@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
@@ -11,6 +11,7 @@ import { SocketProvider } from './context/SocketContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import { soundSystem } from './utils/soundSystem';
 
 import ChatRoom from './pages/ChatRoom';
 import InboxPage from './pages/InboxPage';
@@ -22,8 +23,29 @@ import MobileNav from './components/MobileNav';
 import LandingPage from './pages/LandingPage';
 import AuthSelection from './pages/AuthSelection';
 import MusicPlayer from './components/MusicPlayer';
+import CookieBanner from './components/CookieBanner';
 
 function App() {
+  useEffect(() => {
+    const handleInteraction = () => {
+      soundSystem.unlock();
+      // Only needed once
+      ['click', 'touchstart', 'keydown'].forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
+    };
+
+    ['click', 'touchstart', 'keydown'].forEach(event => {
+      document.addEventListener(event, handleInteraction, { once: true, passive: true });
+    });
+
+    return () => {
+      ['click', 'touchstart', 'keydown'].forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
@@ -52,6 +74,7 @@ function App() {
                       </Routes>
                       <MobileNav />
                       <MusicPlayer />
+                      <CookieBanner />
                     </div>
                   </InboxProvider>
                 </ChatProvider>

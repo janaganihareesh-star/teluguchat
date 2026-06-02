@@ -1,11 +1,10 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
 const GRAD = 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)';
 const PRIMARY = '#4f46e5';
-const GOLD = '#f59e0b';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');

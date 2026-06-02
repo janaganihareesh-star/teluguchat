@@ -2,8 +2,10 @@ const onlineUsers = new Map(); // userId -> socketId
 global.onlineUsers = onlineUsers;
 const User = require('../models/User');
 const Message = require('../models/Message');
+const Notification = require('../models/Notification');
 const { calculateLevel, getBadge } = require('../utils/xpSystem');
 const { moderateMessage } = require('../utils/aiModerator');
+const cron = require('node-cron');
 
 const privateSocket = require('./privateSocket');
 
@@ -71,37 +73,53 @@ const addActivityReward = async (userId, activityType, io) => {
   }
 };
 
-const checkRestriction = async (userAId, userBId) => {
+const getRestrictedSocketIds = async (userId, io) => {
   try {
-    if (!userAId || !userBId) return false;
-    const userA = await User.findById(userAId).select('restrictedUsers');
-    const userB = await User.findById(userBId).select('restrictedUsers');
+    if (!userId) return [];
+    const user = await User.findById(userId).select('restrictedUsers');
+    const myRestricted = user?.restrictedUsers?.map(id => id.toString()) || [];
     
-    const aRestrictsB = userA?.restrictedUsers?.some(id => id.toString() === userBId.toString());
-    const bRestrictsA = userB?.restrictedUsers?.some(id => id.toString() === userAId.toString());
+    const restrictedMeUsers = await User.find({ restrictedUsers: userId }).select('_id');
+    const restrictedMe = restrictedMeUsers.map(u => u._id.toString());
     
-    return aRestrictsB || bRestrictsA;
+    const restrictedSet = new Set([...myRestricted, ...restrictedMe]);
+    
+    const excludedSocketIds = [];
+    const sockets = await io.fetchSockets();
+    for (const s of sockets) {
+      if (s.user && s.user.id && restrictedSet.has(s.user.id.toString())) {
+        excludedSocketIds.push(s.id);
+      }
+    }
+    return excludedSocketIds;
   } catch (err) {
-    return false;
+    console.error('Error getting restricted socket IDs:', err);
+    return [];
   }
 };
 
 const updateUsersEvent = async (io) => {
   try {
     const sockets = await io.fetchSockets();
+    const onlineUserIds = Array.from(onlineUsers.keys());
+    const usersWithRestrictions = await User.find({ _id: { $in: onlineUserIds } }).select('_id restrictedUsers');
+    
+    const restrictedGraph = new Map();
+    onlineUserIds.forEach(id => restrictedGraph.set(id.toString(), new Set()));
+    
+    usersWithRestrictions.forEach(user => {
+      const uId = user._id.toString();
+      user.restrictedUsers?.forEach(rId => {
+         const rIdStr = rId.toString();
+         if (restrictedGraph.has(uId)) restrictedGraph.get(uId).add(rIdStr);
+         if (restrictedGraph.has(rIdStr)) restrictedGraph.get(rIdStr).add(uId);
+      });
+    });
+
     for (const s of sockets) {
       if (s.user && s.user.id) {
-        const currentUserId = s.user.id;
-        
-        // Find who this user restricted
-        const currentUserObj = await User.findById(currentUserId).select('restrictedUsers');
-        const myRestricted = (currentUserObj?.restrictedUsers || []).map(id => id.toString());
-        
-        // Find who restricted this user
-        const usersWhoRestrictedMe = await User.find({ restrictedUsers: currentUserId }).select('_id');
-        const restrictedMeIds = usersWhoRestrictedMe.map(u => u._id.toString());
-        
-        const restrictedSet = new Set([...myRestricted, ...restrictedMeIds]);
+        const currentUserId = s.user.id.toString();
+        const restrictedSet = restrictedGraph.get(currentUserId) || new Set();
 
         const filteredList = Array.from(onlineUsers.entries())
           .filter(([uid]) => !restrictedSet.has(uid.toString()))
@@ -151,16 +169,20 @@ const getOrCreateSystemAdmin = async () => {
   }
 };
 
+// Removed old postDailyNews logic (now handled by newsGenerator.js)
 const setupAutoClear = (io) => {
   const Message = require('../models/Message');
   const User = require('../models/User');
+  const Notification = require('../models/Notification');
+  const aiModerator = require('../utils/aiModerator');
 
   // System Admin is fetched globally now
 
-  // Set up 1-hour interval for auto-clearing
-  setInterval(async () => {
+  // Set up 1-hour interval for auto-clearing at the top of every hour
+  const cron = require('node-cron');
+  cron.schedule('0 * * * *', async () => {
     try {
-      console.log('[Auto-Clear] Initiating 1-hour chat cleanup...');
+      console.log('[Auto-Clear] Initiating hourly chat cleanup...');
       const adminUser = await getOrCreateSystemAdmin();
       if (!adminUser) {
         console.error('[Auto-Clear] Could not retrieve admin user, skipping clearing.');
@@ -188,7 +210,7 @@ const setupAutoClear = (io) => {
     } catch (err) {
       console.error('[Auto-Clear] Error in auto-clear routine:', err);
     }
-  }, 60 * 60 * 1000); // 1 hour
+  });
 
   // Set up 30-minute friendly reminder interval
   setInterval(() => {
@@ -256,15 +278,11 @@ module.exports = (io) => {
           await updateUsersEvent(io);
 
           // Broadcast join-notification selectively (hide if restricted)
-          const sockets = await io.fetchSockets();
-          for (const s of sockets) {
-            if (s.id !== socket.id && s.user && s.user.id) {
-              const otherUserId = s.user.id;
-              const restricted = await checkRestriction(userId, otherUserId);
-              if (!restricted) {
-                s.emit('join-notification', { username: userObj.username });
-              }
-            }
+          const excludedSocketIds = await getRestrictedSocketIds(userId, io);
+          if (excludedSocketIds.length > 0) {
+            socket.broadcast.except(excludedSocketIds).emit('join-notification', { username: userObj.username });
+          } else {
+            socket.broadcast.emit('join-notification', { username: userObj.username });
           }
         }
       } catch(e) {}
@@ -278,15 +296,11 @@ module.exports = (io) => {
       
       if (userInfo) {
         // Broadcast leave-notification selectively (hide if restricted)
-        const sockets = await io.fetchSockets();
-        for (const s of sockets) {
-          if (s.user && s.user.id) {
-            const otherUserId = s.user.id;
-            const restricted = await checkRestriction(userId, otherUserId);
-            if (!restricted) {
-              s.emit('leave-notification', { username: userInfo.username });
-            }
-          }
+        const excludedSocketIds = await getRestrictedSocketIds(userId, io);
+        if (excludedSocketIds.length > 0) {
+          socket.broadcast.except(excludedSocketIds).emit('leave-notification', { username: userInfo.username });
+        } else {
+          socket.broadcast.emit('leave-notification', { username: userInfo.username });
         }
       }
     });
@@ -314,23 +328,62 @@ module.exports = (io) => {
             return;
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error('join-room moderation check failed:', e);
+      }
       socket.join(roomId);
-      console.log(`Socket ${socket.id} joined room ${roomId}`);
-      try {
-        const joinedUser = await User.findById(socket.user.id);
-        if (joinedUser) {
-          socket.to(roomId).emit('system-message', {
-            message: `<b>${joinedUser.username}</b> has joined the room`,
-            icon: '🩷'
-          });
-        }
-      } catch (e) {}
+      console.log(`USER JOINED ROOM: ${socket.id} ${roomId}`);
+      const clients = await io.in(roomId).fetchSockets();
+      console.log(`CLIENTS IN ROOM: ${clients.length}`);
+      
+      global.hasBroadcastedJoin = global.hasBroadcastedJoin || new Set();
+      const userIdStr = socket.user.id.toString();
+      if (!global.hasBroadcastedJoin.has(userIdStr)) {
+        global.hasBroadcastedJoin.add(userIdStr);
+        try {
+          const joinedUser = await User.findById(socket.user.id);
+          if (joinedUser) {
+            socket.to(roomId).emit('system-message', {
+              message: `<b>${joinedUser.username}</b> has joined the room`,
+              icon: '🩷'
+            });
+          }
+        } catch (e) {}
+      }
     });
 
     socket.on('leave-room', (roomId) => {
       socket.leave(roomId);
       console.log(`Socket ${socket.id} left room ${roomId}`);
+    });
+
+    socket.on('react-message', async (data) => {
+      try {
+        const { messageId, emoji, roomId } = data;
+        const userId = socket.user.id;
+
+        const Message = require('../models/Message');
+        const message = await Message.findById(messageId);
+        if (!message) return;
+
+        const existingIndex = message.reactions.findIndex(
+          r => r.userId.toString() === userId && r.emoji === emoji
+        );
+
+        if (existingIndex > -1) {
+          message.reactions.splice(existingIndex, 1);
+        } else {
+          message.reactions.push({ userId, emoji });
+        }
+
+        await message.save();
+        io.to(roomId).emit('reaction-updated', {
+          messageId,
+          reactions: message.reactions
+        });
+      } catch (err) {
+        console.error('Error in react-message:', err);
+      }
     });
 
     socket.on('disconnect', async () => {
@@ -350,15 +403,11 @@ module.exports = (io) => {
         
         if (userInfo) {
           // Broadcast leave-notification selectively
-          const sockets = await io.fetchSockets();
-          for (const s of sockets) {
-            if (s.user && s.user.id) {
-              const otherUserId = s.user.id;
-              const restricted = await checkRestriction(disconnectedUserId, otherUserId);
-              if (!restricted) {
-                s.emit('leave-notification', { username: userInfo.username });
-              }
-            }
+          const excludedSocketIds = await getRestrictedSocketIds(disconnectedUserId, io);
+          if (excludedSocketIds.length > 0) {
+            socket.broadcast.except(excludedSocketIds).emit('leave-notification', { username: userInfo.username });
+          } else {
+            socket.broadcast.emit('leave-notification', { username: userInfo.username });
           }
         }
         try { await User.findByIdAndUpdate(disconnectedUserId, { isOnline: false, lastSeen: new Date() }); } catch(e) {}
@@ -368,7 +417,8 @@ module.exports = (io) => {
 
     socket.on('send-message', async (data) => {
       const senderId = socket.user.id; 
-      const { roomId, message, mentions } = data;
+      const { roomId, message } = data;
+      const mentions = data.mentions || [];
       const mediaUrl = data.mediaUrl || data.voiceUrl || data.gifUrl || '';
       const isVoice = !!data.voiceUrl;
 
@@ -418,6 +468,7 @@ module.exports = (io) => {
           gifUrl: data.gifUrl || '',
           mentions,
           sender: senderId,
+          replyTo: data.replyTo || null,
         });
         await newMessage.save();
 
@@ -425,26 +476,70 @@ module.exports = (io) => {
         
         const populatedMessage = await Message.findById(newMessage._id).populate('sender', 'username profilePic level badge role');
         
-        // Filter who gets the message based on restriction
-        const roomSocketIds = io.sockets.adapter.rooms.get(roomId);
-        if (roomSocketIds) {
-          for (const socketId of roomSocketIds) {
-            const s = io.sockets.sockets.get(socketId);
-            const recipientUserId = s?.user?.id;
-            
-            if (recipientUserId) {
-              // Self-message should never be restricted
-              let restricted = false;
-              if (senderId.toString() !== recipientUserId.toString()) {
-                restricted = await checkRestriction(senderId.toString(), recipientUserId.toString());
-              }
-              if (!restricted) {
-                if (isIgnored && recipientUserId.toString() !== senderId.toString()) {
-                  continue;
+        // --- Process Mentions and Replies for Notifications ---
+        try {
+          const senderInfo = await User.findById(senderId);
+          if (senderInfo) {
+            // Process Replies
+            if (data.replyTo) {
+              const repliedMessage = await Message.findById(data.replyTo);
+              if (repliedMessage && repliedMessage.sender.toString() !== senderId) {
+                const notif = new Notification({
+                  recipient: repliedMessage.sender,
+                  sender: senderId,
+                  type: 'reply',
+                  message: `${senderInfo.username} replied to your message.`,
+                  link: '/chat'
+                });
+                await notif.save();
+                const populatedNotif = await Notification.findById(notif._id).populate('sender', 'username profilePic level badge role gender');
+                const targetSocket = global.onlineUsers?.get(repliedMessage.sender.toString());
+                if (targetSocket) {
+                  io.to(targetSocket.socketId).emit('new-notification', populatedNotif);
                 }
-                s.emit('receive-message', populatedMessage);
               }
             }
+
+            // Process Mentions
+            if (mentions && mentions.length > 0) {
+              for (const username of mentions) {
+                // Find user by username
+                const mentionedUser = await User.findOne({ username: username.replace('@', '') });
+                if (mentionedUser && mentionedUser._id.toString() !== senderId && (!data.replyTo || (data.replyTo && mentionedUser._id.toString() !== senderId))) { // Avoid duplicate if already replied
+                  const notif = new Notification({
+                    recipient: mentionedUser._id,
+                    sender: senderId,
+                    type: 'mention',
+                    message: `${senderInfo.username} mentioned you in the chat.`,
+                    link: '/chat'
+                  });
+                  await notif.save();
+                  const populatedNotif = await Notification.findById(notif._id).populate('sender', 'username profilePic level badge role gender');
+                  const targetSocket = global.onlineUsers?.get(mentionedUser._id.toString());
+                  if (targetSocket) {
+                    io.to(targetSocket.socketId).emit('new-notification', populatedNotif);
+                  }
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error creating notifications:", error);
+        }
+
+        // Filter who gets the message based on restriction
+        const excludedSocketIds = await getRestrictedSocketIds(senderId, io);
+        if (isIgnored) {
+          socket.emit('receive-message', populatedMessage);
+        } else {
+          console.log("Message received from client");
+          console.log("Broadcasting message to room", roomId);
+          console.log("senderId", senderId);
+
+          if (excludedSocketIds.length > 0) {
+            io.to(roomId).except(excludedSocketIds).emit('receive-message', populatedMessage);
+          } else {
+            io.to(roomId).emit('receive-message', populatedMessage);
           }
         }
 
@@ -483,35 +578,30 @@ module.exports = (io) => {
           }, 1500); // 1.5s delay for realistic "typing" feel
         }
       } catch (error) {
-        console.error('Error saving message:', error);
+        console.error('Error saving message:', error.message || error);
+        console.error('RoomId:', roomId);
+        console.error('Socket ID:', socket.id);
+        console.error('Payload:', data);
       }
     });
 
     socket.on('typing', async (data) => {
       const senderId = socket.user.id;
-      const sockets = await io.fetchSockets();
-      for (const s of sockets) {
-        if (s.id !== socket.id && s.user && s.user.id) {
-          const recipientUserId = s.user.id;
-          const restricted = await checkRestriction(senderId, recipientUserId);
-          if (!restricted) {
-            s.emit('user-typing', data.username);
-          }
-        }
+      const excludedSocketIds = await getRestrictedSocketIds(senderId, io);
+      if (excludedSocketIds.length > 0) {
+        socket.broadcast.except(excludedSocketIds).emit('user-typing', data.username);
+      } else {
+        socket.broadcast.emit('user-typing', data.username);
       }
     });
 
     socket.on('stop-typing', async (roomId) => {
       const senderId = socket.user.id;
-      const sockets = await io.fetchSockets();
-      for (const s of sockets) {
-        if (s.id !== socket.id && s.user && s.user.id) {
-          const recipientUserId = s.user.id;
-          const restricted = await checkRestriction(senderId, recipientUserId);
-          if (!restricted) {
-            s.emit('user-stop-typing');
-          }
-        }
+      const excludedSocketIds = await getRestrictedSocketIds(senderId, io);
+      if (excludedSocketIds.length > 0) {
+        socket.broadcast.except(excludedSocketIds).emit('user-stop-typing');
+      } else {
+        socket.broadcast.emit('user-stop-typing');
       }
     });
   });

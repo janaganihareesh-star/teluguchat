@@ -70,6 +70,23 @@ const UserProfileCard = ({ user: targetUser, position, onClose, onPrivate, onVie
     }
   };
 
+  const handleAddFriend = async () => {
+    if (targetUser._id === currentUser._id) return;
+    setLoading(true);
+    try {
+      const { data } = await axios.post(`http://localhost:3500/api/users/friend-request/${targetUser._id}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert(data.message || 'Friend request sent successfully.');
+      onClose(); // Close card after sending
+    } catch (err) {
+      console.error('Error sending friend request:', err);
+      alert(err.response?.data?.message || 'Error sending friend request.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Adjust card position to prevent overflow off-screen
   const cardStyle = {
     position: 'fixed',
@@ -170,6 +187,20 @@ const UserProfileCard = ({ user: targetUser, position, onClose, onPrivate, onVie
                 <span style={{ fontSize: '1.1rem', marginRight: '8px', color: '#2196f3' }}>💬</span>
                 <span style={{ fontSize: '0.85rem', color: '#333', fontWeight: 'bold' }}>Private</span>
               </button>
+
+              {/* Row 2.5: Add Friend */}
+              {targetUser._id !== currentUser._id && (
+                <button 
+                  onClick={handleAddFriend} 
+                  disabled={loading}
+                  style={rowButtonStyle}
+                  onMouseOver={e => e.currentTarget.style.background = '#f5f5f5'}
+                  onMouseOut={e => e.currentTarget.style.background = 'none'}
+                >
+                  <span style={{ fontSize: '1.1rem', marginRight: '8px', color: '#10b981' }}>➕</span>
+                  <span style={{ fontSize: '0.85rem', color: '#333', fontWeight: 'bold' }}>Add friend</span>
+                </button>
+              )}
 
               {/* Row 3: Action */}
               <button 

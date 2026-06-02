@@ -81,7 +81,14 @@ const userSchema = new mongoose.Schema({
     suspensionReason: { type: String },
     visibilityLimitedUntil: { type: Date },
     visibilityLimitedStart: { type: Date },
-    reportsReceivedCount: { type: Number, default: 0 }
+    reportsReceivedCount: { type: Number, default: 0 },
+    appeals: [{
+      type: { type: String, enum: ['hold', 'kick', 'suspend'] },
+      reason: { type: String },
+      status: { type: String, enum: ['pending', 'reviewed'], default: 'pending' },
+      submittedAt: { type: Date, default: Date.now }
+    }],
+    lastAppealAt: { type: Date }
   }
 });
 

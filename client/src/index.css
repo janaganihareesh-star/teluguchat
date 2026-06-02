@@ -81,18 +81,24 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Explicit styles for standard inputs to fix visibility issues, ignoring styled transparent inputs */
-input:not([type="submit"]):not(.bg-transparent), select, textarea:not(.bg-transparent) {
-  color: #1f2937;
-  background-color: #ffffff;
+/* Explicit styles for standard inputs to fix visibility issues */
+input, select, textarea {
+  color: var(--text-main);
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
 }
 
 input::placeholder, textarea::placeholder {
-  color: #9ca3af;
+  color: var(--text-muted);
   opacity: 1;
 }
 
 select option {
-  color: #1f2937;
-  background-color: #ffffff;
+  color: var(--text-main);
+  background-color: var(--bg-panel);
 }

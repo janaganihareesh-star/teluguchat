@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { FaEye, FaTimes, FaCamera, FaStar, FaThumbsUp, FaAddressCard, FaHeart, FaEnvelope, FaKey, FaGift, FaUserFriends, FaBan, FaCog, FaLock, FaGlobe, FaSignOutAlt, FaTrash } from 'react-icons/fa';
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { AuthContext } from '../context/AuthContext';
-import { FaPlay, FaBars, FaSyncAlt, FaCheckSquare, FaTrashAlt } from 'react-icons/fa';
+import { FaPlay, FaBars, FaSyncAlt, FaCheckSquare, FaTrashAlt, FaCheckCircle } from 'react-icons/fa';
 import MessageBubble from '../components/MessageBubble';
 import MessageInput from '../components/MessageInput';
 import ModerationOverlay from '../components/ModerationOverlay';
@@ -21,17 +21,17 @@ import SoundsModal from '../components/SoundsModal';
 import ThemeModal from '../components/ThemeModal';
 import NewsModal from '../components/NewsModal';
 import LeaderboardsModal from '../components/LeaderboardsModal';
+import ReportModal from '../components/ReportModal';
 import { soundSystem } from '../utils/soundSystem';
+import usePushNotification from '../hooks/usePushNotification';
 
-const HEADER_BG = 'rgba(15, 23, 42, 0.75)';
-const CARD_BG = 'rgba(30, 41, 59, 0.45)';
-const GOLD = '#f59e0b';
-const INDIGO = '#6366f1';
+
 
 const ChatRoom = () => {
   const navigate = useNavigate();
   const { user, token, logout, updateUser } = useContext(AuthContext);
-  const { socket } = useSocket();
+  const { socket, isConnected, reconnecting } = useSocket();
+  const { sendNotification } = usePushNotification(user);
   
   const [moderationEvent, setModerationEvent] = useState(null);
   const [activeHoldEnd, setActiveHoldEnd] = useState(user?.moderation?.holdUntil ? new Date(user.moderation.holdUntil) : null);
@@ -58,9 +58,50 @@ const ChatRoom = () => {
   const [showTheme, setShowTheme] = useState(false);
   const [showNews, setShowNews] = useState(false);
   const [showLeaderboards, setShowLeaderboards] = useState(false);
+
+  // Reporting state
+  const [reportMessageData, setReportMessageData] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+
   const [hasSeenNews, setHasSeenNews] = useState(() => localStorage.getItem('hasSeenNews') === 'true');
   const messagesEndRef = useRef(null);
+  const chatPortRef = useRef(null);
+  const [showNewMessageBadge, setShowNewMessageBadge] = useState(false);
   const roomId = 'general';
+
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const handleResize = () => {
+      setViewportHeight(window.visualViewport.height);
+    };
+    window.visualViewport.addEventListener('resize', handleResize);
+    window.visualViewport.addEventListener('scroll', handleResize);
+    return () => {
+      window.visualViewport.removeEventListener('resize', handleResize);
+      window.visualViewport.removeEventListener('scroll', handleResize);
+    };
+  }, []);
+
+  const handleScroll = () => {
+    if (!chatPortRef.current) return;
+    const { scrollHeight, scrollTop, clientHeight } = chatPortRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 60;
+    if (isAtBottom) {
+      setShowNewMessageBadge(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleOpenProfile = () => {
+      if (user) {
+        setFullProfileUsername(user.username);
+      }
+    };
+    window.addEventListener('open-my-profile', handleOpenProfile);
+    return () => window.removeEventListener('open-my-profile', handleOpenProfile);
+  }, [user]);
 
   useEffect(() => {
     if (activePrivateChatUser) {
@@ -70,30 +111,22 @@ const ChatRoom = () => {
   }, [activePrivateChatUser]);
 
   useEffect(() => {
-    // Fetch legacy message history
-    axios.get(`http://localhost:3500/api/messages/${roomId}`, { 
-      headers: { Authorization: `Bearer ${token}` } 
+    axios.get(`http://localhost:3500/api/messages/${roomId}`, {
+      headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => setMessages(res.data))
       .catch(console.error);
 
     const onConnect = () => {
+      console.log('SOCKET CONNECTED:', socket.id);
       socket.emit('join-room', roomId);
     };
-    socket.on('connect', onConnect);
-    // Also emit initially in case it's already connected
-    socket.emit('join-room', roomId);
 
-    socket.on('receive-message', (msg) => {
-      setMessages(prev => [...prev, msg]);
-      if (msg.sender?._id !== user?._id) {
-        if (user && msg.message.includes(`@${user.username}`)) {
-          soundSystem.mentionAlert();
-        } else {
-          soundSystem.messagePing();
-        }
-      }
-    });
+    socket.on('connect', onConnect);
+
+    if (socket.connected) {
+      socket.emit('join-room', roomId);
+    }
 
     socket.on('chats-cleared', (msg) => {
       setMessages([msg]);
@@ -123,11 +156,8 @@ const ChatRoom = () => {
 
     socket.on('moderation-event', (data) => {
       setModerationEvent(data);
-      if (data.type === 'hold') {
-        setActiveHoldEnd(data.until);
-      } else if (data.type === 'suspend' || data.type === 'kick') {
-        setActiveHoldEnd(null);
-      }
+      if (data.type === 'hold') setActiveHoldEnd(data.until);
+      else if (data.type === 'suspend' || data.type === 'kick') setActiveHoldEnd(null);
     });
 
     socket.on('level-up', (data) => {
@@ -137,21 +167,99 @@ const ChatRoom = () => {
 
     socket.on('activity-reward', (data) => {
       updateUser({ level: data.level, xp: data.xp, coins: data.coins });
-      if (data.leveledUp) {
-        setLevelUpData(data.level);
-      }
+      if (data.leveledUp) setLevelUpData(data.level);
+    });
+
+    socket.on('reaction-updated', (data) => {
+      setMessages(prev => prev.map(msg => 
+        msg._id === data.messageId 
+          ? { ...msg, reactions: data.reactions }
+          : msg
+      ));
     });
 
     return () => {
       socket.emit('leave-room', roomId);
-      ['receive-message', 'chats-cleared', 'user-typing', 'user-stop-typing', 'message-rejected', 'system-message', 'level-up', 'activity-reward', 'moderation-event'].forEach(e => socket.off(e));
       socket.off('connect', onConnect);
+      ['chats-cleared', 'user-typing', 'user-stop-typing', 'message-rejected',
+       'system-message', 'level-up', 'activity-reward', 'moderation-event', 'reaction-updated']
+        .forEach(e => socket.off(e));
     };
   }, [socket, token]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const handleReactMessage = (e) => {
+      const { messageId, emoji } = e.detail;
+      socket.emit('react-message', { messageId, emoji, roomId });
+    };
+    window.addEventListener('react-message', handleReactMessage);
+    return () => window.removeEventListener('react-message', handleReactMessage);
+  }, [socket]);
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleReceiveMessage = (msg) => {
+      setMessages(prev => {
+        if (prev.some(m => m._id === msg._id)) return prev;
+        return [...prev, msg];
+      });
+
+      if (msg.sender?._id !== user?._id) {
+        if (user && msg.message?.includes(`@${user.username}`)) {
+          soundSystem.mentionAlert();
+          sendNotification(
+            `${msg.sender?.username} mentioned you`,
+            msg.message,
+            'mention'
+          );
+        } else {
+          soundSystem.messagePing();
+          if (document.hidden) {
+            sendNotification(
+              `${msg.sender?.username || 'Someone'}`,
+              msg.message || 'Sent a message',
+              'message'
+            );
+          }
+        }
+      }
+    };
+
+    socket.on('receive-message', handleReceiveMessage);
+
+    return () => {
+      socket.off('receive-message', handleReceiveMessage);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!chatPortRef.current) return;
+    const { scrollHeight, scrollTop, clientHeight } = chatPortRef.current;
+    
+    // Check if user was already near bottom (within 220px)
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 220;
+    
+    // Check if the last message was sent by the current user
+    const lastMsg = messages[messages.length - 1];
+    const isMyMessage = lastMsg && lastMsg.sender?._id === user?._id;
+    
+    if (isNearBottom || isMyMessage) {
+      setTimeout(() => {
+        if (chatPortRef.current) {
+          chatPortRef.current.scrollTo({
+            top: chatPortRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 50);
+      setShowNewMessageBadge(false);
+    } else {
+      // If we are scrolled up and a new message arrives, show the floaty badge!
+      if (lastMsg && lastMsg.type !== 'system') {
+        setShowNewMessageBadge(true);
+      }
+    }
+  }, [messages, user]);
 
   useEffect(() => {
     if (activeHoldEnd) {
@@ -237,13 +345,32 @@ const ChatRoom = () => {
     setHiddenMessages(prev => [...prev, msgId]);
   };
 
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const handleReportMessage = (msg) => {
     if (!token || user?.role === 'guest') return alert('Please login to report.');
-    if (window.confirm(`Report message from ${msg.sender.username}?`)) {
-      axios.post('http://localhost:3500/api/users/report', { targetId: msg.sender._id }, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).then(() => alert('Report submitted successfully.'))
-        .catch(err => alert(err.response?.data?.message || 'Error reporting.'));
+    setReportMessageData(msg);
+  };
+
+  const submitReport = async (reason) => {
+    try {
+      if (reportMessageData) {
+        await axios.post(`http://localhost:3500/api/users/report-message/${reportMessageData._id}`, {
+          reason,
+          targetUserId: reportMessageData.sender._id,
+          chatType: 'general'
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        showToast("Thank you for reporting");
+        setReportMessageData(null);
+      }
+    } catch (err) {
+      console.error('Error reporting message', err);
+      showToast("Error submitting report");
     }
   };
 
@@ -252,8 +379,9 @@ const ChatRoom = () => {
     setProfileCard({ user: targetUser, x: rect.left, y: rect.bottom });
   };
 
+
   return (
-    <div className="flex flex-col h-[100dvh] font-sans overflow-hidden relative" style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}>
+    <div className="flex flex-col font-sans overflow-hidden relative" style={{ height: `${viewportHeight}px`, backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}>
       
       {/* HEADER BAR */}
       <header className="flex items-center justify-between px-4 h-14 z-10 border-b border-black/10 shrink-0" style={{ background: 'var(--bg-panel)' }}>
@@ -409,6 +537,29 @@ const ChatRoom = () => {
         </div>
       </header>
 
+      {(!isConnected || reconnecting) && (
+        <div 
+          style={{
+            background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)',
+            color: '#ffffff',
+            textAlign: 'center',
+            padding: '6px 16px',
+            fontSize: '0.8rem',
+            fontWeight: 'bold',
+            zIndex: 49,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}
+          className="animate-pulse shrink-0"
+        >
+          <span>⏳</span>
+          <span>Connecting to TeluguChat network... Please check your internet connection.</span>
+        </div>
+      )}
+
       {/* LEFT DRAWER OVERLAY */}
       {showDrawer && (
         <div className="fixed inset-0 z-50 flex">
@@ -469,8 +620,16 @@ const ChatRoom = () => {
       <div className="flex-1 flex overflow-hidden">
         
         {/* CHAT MESSAGES PORT */}
-        <div className="flex-1 flex flex-col overflow-hidden border-r" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
-          <div className="flex-1 overflow-y-auto space-y-0">
+        <div className="flex-1 flex flex-col overflow-hidden border-r relative" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
+          <style>{`
+            @keyframes pulseGlow {
+              0% { box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4); }
+              50% { box-shadow: 0 8px 32px rgba(99, 102, 241, 0.7); transform: translate(-50%, -2px); }
+              100% { box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4); }
+            }
+          `}</style>
+
+          <div ref={chatPortRef} onScroll={handleScroll} className="flex-1 overflow-y-auto space-y-0">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-slate-400 p-8">
                 <div className="text-4xl mb-3">💬</div>
@@ -506,8 +665,45 @@ const ChatRoom = () => {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Floating New Messages Badge */}
+          {showNewMessageBadge && (
+            <button
+              onClick={() => {
+                if (chatPortRef.current) {
+                  chatPortRef.current.scrollTo({
+                    top: chatPortRef.current.scrollHeight,
+                    behavior: 'smooth'
+                  });
+                }
+                setShowNewMessageBadge(false);
+              }}
+              style={{
+                position: 'absolute',
+                bottom: '100px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                backgroundColor: '#6366f1',
+                color: '#ffffff',
+                padding: '10px 20px',
+                borderRadius: '9999px',
+                fontWeight: 'bold',
+                fontSize: '0.85rem',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                zIndex: 40,
+                transition: 'transform 0.2s',
+                animation: 'pulseGlow 2s infinite',
+              }}
+            >
+              <span>⬇️</span> New Messages
+            </button>
+          )}
+
           {/* INPUT FORUM CONTAINER */}
-          <footer className="p-4 border-t shrink-0 relative" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
+          <footer className="p-4 border-t shrink-0 relative" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
             {isHoldActive && (
               <div className="mb-2 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs font-bold text-blue-400 flex items-center justify-between shadow-lg">
                 <span className="flex items-center gap-1.5">⏳ Chat on hold due to spam activity.</span>
@@ -728,7 +924,7 @@ const ChatRoom = () => {
       {showSounds && <SoundsModal onClose={() => setShowSounds(false)} />}
       {showTheme && <ThemeModal onClose={() => setShowTheme(false)} />}
       {showNews && <NewsModal onClose={() => setShowNews(false)} />}
-      {showLeaderboards && <LeaderboardsModal onClose={() => setShowLeaderboards(false)} />}
+      {showLeaderboards && <LeaderboardsModal onClose={() => setShowLeaderboards(false)} token={token} />}
 
       {/* MODERATION OVERLAY */}
       {moderationEvent && (
@@ -742,6 +938,21 @@ const ChatRoom = () => {
             }
           }}
         />
+      )}
+
+      {/* REPORT MODAL */}
+      <ReportModal 
+        isOpen={!!reportMessageData} 
+        onClose={() => setReportMessageData(null)}
+        onSubmit={submitReport}
+      />
+
+      {/* SUCCESS TOAST */}
+      {toastMessage && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-white border border-slate-200 shadow-xl rounded-full px-6 py-3 flex items-center gap-3 animate-in slide-in-from-top fade-in duration-300">
+          <FaCheckCircle className="text-green-500 text-xl" />
+          <span className="font-bold text-slate-800 text-sm">{toastMessage}</span>
+        </div>
       )}
     </div>
   );

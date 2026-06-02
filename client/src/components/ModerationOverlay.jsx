@@ -1,8 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 export default function ModerationOverlay({ event, onClose }) {
   const [timeLeft, setTimeLeft] = useState(null);
+  const { token } = useContext(AuthContext);
+  const [appealSubmitted, setAppealSubmitted] = useState(false);
+  const [appealError, setAppealError] = useState('');
+
+  const [appealResult, setAppealResult] = useState('');
+  const [appealApproved, setAppealApproved] = useState(false);
+
+  const handleAppeal = async () => {
+    try {
+      const res = await axios.post('http://localhost:3500/api/users/appeal', {
+        type: event.type,
+        reason: 'Requesting review of moderation action.'
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAppealSubmitted(true);
+      setAppealError('');
+      setAppealResult(res.data.message);
+      setAppealApproved(res.data.approved);
+      if (res.data.approved) {
+        setTimeout(() => window.location.reload(), 2000);
+      }
+    } catch (err) {
+      setAppealError(err.response?.data?.message || 'Failed to submit appeal.');
+    }
+  };
 
   useEffect(() => {
     if (!event) return;
@@ -119,7 +148,7 @@ export default function ModerationOverlay({ event, onClose }) {
                 {event.message}
               </p>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 {timeLeft && (
                   <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2 text-xs font-bold text-slate-300">
                     <span className="animate-pulse">⏳</span>
@@ -140,6 +169,28 @@ export default function ModerationOverlay({ event, onClose }) {
                   >
                     {event.type === 'suspend' ? 'Exit Application' : 'Return to Lobby'}
                   </button>
+                )}
+
+                {(event.type === 'hold' || event.type === 'kick' || event.type === 'suspend') && (
+                  <div className="mt-2 w-full">
+                    {appealSubmitted ? (
+                      <p className={`text-xs font-bold ${appealApproved ? 'text-green-400' : 'text-red-400'}`}>
+                        {appealResult}
+                      </p>
+                    ) : (
+                      <>
+                        <button
+                          onClick={handleAppeal}
+                          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-lg transition duration-200"
+                        >
+                          📩 Request Review
+                        </button>
+                        {appealError && (
+                          <p className="text-red-400 text-xs mt-1">{appealError}</p>
+                        )}
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

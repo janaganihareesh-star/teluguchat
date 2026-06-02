@@ -8,16 +8,23 @@ const messageSchema = new mongoose.Schema({
   voiceUrl: { type: String },
   gifUrl: { type: String },
   stickerUrl: { type: String },
-  mentions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  mentions: [{ type: String }],
   reactions: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     emoji: { type: String }
   }],
+  replyTo: {
+    messageId: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' },
+    username: { type: String },
+    text: { type: String }
+  },
   isDeleted: { type: Boolean, default: false },
   deletedBy: { type: String, enum: ['user', 'admin'] },
   createdAt: { type: Date, default: Date.now },
 });
 
 messageSchema.index({ room: 1, createdAt: -1 });
+messageSchema.index({ mentions: 1 });
+messageSchema.index({ isDeleted: 1 });
 
 module.exports = mongoose.model('Message', messageSchema);

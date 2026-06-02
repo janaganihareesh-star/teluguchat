@@ -16,6 +16,7 @@ const {
   ignoreUser,
   unignoreUser,
   reportUser,
+  reportMessage,
   addCoins,
   sendGift,
   transferCoins,
@@ -52,6 +53,9 @@ router.post('/unrestrict/:userId', protect, unrestrictUser);
 router.post('/ignore/:userId', protect, ignoreUser);
 router.post('/unignore/:userId', protect, unignoreUser);
 router.post('/report/:userId', protect, reportUser);
+router.post('/report-message/:messageId', protect, reportMessage);
 router.get('/actions-status/:userId', protect, getActionsStatus);
+
+router.post('/appeal', protect, require('../controllers/userController').submitAppeal);
 
 module.exports = router;

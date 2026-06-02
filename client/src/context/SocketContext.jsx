@@ -15,41 +15,49 @@ export const SocketProvider = ({ children }) => {
   const [reconnecting, setReconnecting] = useState(false);
 
   useEffect(() => {
-    if (user && token) {
-      socket.auth = { token };
+    if (!user || !token) return;
+
+    socket.auth = { token };
+
+    const onConnect = () => {
+      console.log('SOCKET CONNECTED:', socket.id);
+      setIsConnected(true);
+      setReconnecting(false);
+      socket.emit('user-online', user._id);
+    };
+
+    const onDisconnect = () => {
+      console.log('Socket disconnected');
+      setIsConnected(false);
+    };
+
+    const onReconnectAttempt = () => {
+      console.log('Socket reconnecting...');
+      setReconnecting(true);
+    };
+
+    const onUpdateUsers = (users) => {
+      setOnlineUsers(users);
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('update-users', onUpdateUsers);
+    socket.io.on('reconnect_attempt', onReconnectAttempt);
+
+    if (!socket.connected) {
       socket.connect();
-      socket.on('connect', () => {
-        setIsConnected(true);
-        setReconnecting(false);
-        socket.emit('user-online', user._id);
-      });
-
-      if (socket.connected) {
-        setIsConnected(true);
-        socket.emit('user-online', user._id);
-      }
-
-      socket.on('disconnect', () => {
-        setIsConnected(false);
-      });
-      
-      socket.io.on('reconnect_attempt', () => {
-         setReconnecting(true);
-      });
-
-      socket.on('update-users', (users) => {
-        setOnlineUsers(users);
-      });
-
-      return () => {
-        socket.emit('user-offline', user._id);
-        socket.disconnect();
-        socket.off('connect');
-        socket.off('disconnect');
-        socket.io.off('reconnect_attempt');
-        socket.off('update-users');
-      };
+    } else {
+      onConnect();
     }
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('update-users', onUpdateUsers);
+      socket.io.off('reconnect_attempt', onReconnectAttempt);
+
+    };
   }, [user]);
 
   return (

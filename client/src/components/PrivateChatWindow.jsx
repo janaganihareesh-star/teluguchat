@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef, useContext, Suspense, lazy } from '
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { FaTimes, FaExpandAlt, FaCompressAlt, FaMinus, FaPlus, FaCog, FaMicrophone, FaSmile, FaPaperclip, FaPaperPlane, FaMusic, FaImage } from 'react-icons/fa';
+import { FaTimes, FaExpandAlt, FaCompressAlt, FaMinus, FaPlus, FaCog, FaMicrophone, FaSmile, FaPaperclip, FaPaperPlane, FaMusic, FaImage, FaCheckCircle } from 'react-icons/fa';
 import MessageBubble from './MessageBubble';
+import ReportModal from './ReportModal';
 
 const EmojiPicker = lazy(() => import('./EmojiPicker'));
 const StickerPicker = lazy(() => import('./StickerPicker'));
@@ -21,6 +22,9 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
   const [isIgnored, setIsIgnored] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [hiddenMessages, setHiddenMessages] = useState([]);
+  const [reportMessageData, setReportMessageData] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
   const messagesEndRef = useRef(null);
 
   // Scroll to bottom helper
@@ -150,7 +154,7 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
     }
   };
 
-  const handleReport = async () => {
+  const handleReportUser = async () => {
     const reason = prompt('Enter reason for reporting this user:');
     if (reason === null) return; // user cancelled
     try {
@@ -162,6 +166,39 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || 'Error executing action');
+    }
+  };
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleHideMessage = (msgId) => {
+    setHiddenMessages(prev => [...prev, msgId]);
+  };
+
+  const handleReportMessage = (msg) => {
+    if (!token || currentUser?.role === 'guest') return alert('Please login to report.');
+    setReportMessageData(msg);
+  };
+
+  const submitReport = async (reason) => {
+    try {
+      if (reportMessageData) {
+        await axios.post(`http://localhost:3500/api/users/report-message/${reportMessageData._id}`, {
+          reason,
+          targetUserId: reportMessageData.sender._id || reportMessageData.sender,
+          chatType: 'private'
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        showToast("Thank you for reporting");
+        setReportMessageData(null);
+      }
+    } catch (err) {
+      console.error('Error reporting message', err);
+      showToast("Error submitting report");
     }
   };
 
@@ -333,7 +370,7 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
             {isIgnored ? 'Unignore User' : 'Ignore User'}
           </button>
           <button 
-            onClick={handleReport} 
+            onClick={handleReportUser} 
             style={{ ...settingsOptionStyle, borderTop: '1px solid #f0f0f0', color: '#ff3b30' }}
             onMouseOver={e => e.currentTarget.style.background = '#fff5f5'}
             onMouseOut={e => e.currentTarget.style.background = 'none'}
@@ -353,8 +390,8 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
                 <span>No messages yet. Say hello!</span>
               </div>
             ) : (
-              messages.map((msg, i) => {
-                const prevMsg = messages[i - 1];
+              messages.filter(m => !hiddenMessages.includes(m._id)).map((msg, i, arr) => {
+                const prevMsg = arr[i - 1];
                 const isGrouped = prevMsg &&
                   prevMsg.sender?._id === msg.sender?._id &&
                   (new Date(msg.createdAt) - new Date(prevMsg.createdAt)) < 2 * 60 * 1000;
@@ -365,6 +402,8 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
                     message={msg} 
                     currentUser={currentUser} 
                     isGrouped={isGrouped} 
+                    onHide={handleHideMessage}
+                    onReport={handleReportMessage}
                   />
                 );
               })
@@ -375,7 +414,36 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
           {/* CHAT FOOTER INPUT */}
           <div style={{ padding: '10px 14px', borderTop: '1px solid #e2e8f0', background: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px', position: 'relative', flexShrink: 0 }}>
             {/* Attachment Button */}
-            <button style={footerBtnStyle} title="Add attachment"><FaPaperclip /></button>
+            <label style={{ ...footerBtnStyle, cursor: 'pointer' }} title="Add attachment">
+              <FaPaperclip />
+              <input 
+                type="file" 
+                accept="image/*" 
+                style={{ display: 'none' }}
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  const formData = new FormData();
+                  formData.append('file', file);
+                  try {
+                    const res = await axios.post('http://localhost:3500/api/upload', formData, {
+                      headers: { 
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                      }
+                    });
+                    socket.emit('private-message', {
+                      senderId: currentUser._id,
+                      receiverId: targetUser._id,
+                      message: '',
+                      mediaUrl: res.data.url
+                    });
+                  } catch (err) {
+                    console.error('Upload failed:', err);
+                  }
+                }}
+              />
+            </label>
 
 
             {/* Emoji Trigger */}
@@ -427,6 +495,21 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
             )}
           </div>
         </>
+      )}
+
+      {/* REPORT MODAL */}
+      <ReportModal 
+        isOpen={!!reportMessageData} 
+        onClose={() => setReportMessageData(null)}
+        onSubmit={submitReport}
+      />
+
+      {/* SUCCESS TOAST */}
+      {toastMessage && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[200] bg-white border border-slate-200 shadow-xl rounded-full px-4 py-2 flex items-center gap-2 animate-in slide-in-from-top fade-in duration-300 w-max max-w-[90%]">
+          <FaCheckCircle className="text-green-500 text-lg shrink-0" />
+          <span className="font-bold text-slate-800 text-xs">{toastMessage}</span>
+        </div>
       )}
     </div>
   );

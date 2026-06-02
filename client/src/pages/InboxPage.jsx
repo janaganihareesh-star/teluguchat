@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -27,25 +27,78 @@ const InboxPage = () => {
     }
   };
 
+  const [pullStartY, setPullStartY] = useState(null);
+  const [pullOffset, setPullOffset] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const fetchConvs = async () => {
+    if (user?.role === 'guest') return null;
+    try {
+      const { data } = await axios.get('http://localhost:3500/api/inbox/conversations', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConversations(data);
+      return data;
+    } catch (err) {
+      console.error('Error fetching conversations:', err);
+      return null;
+    }
+  };
+
+  const handleTouchStart = (e) => {
+    const container = e.currentTarget;
+    if (container.scrollTop === 0) {
+      setPullStartY(e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (pullStartY === null || isRefreshing) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - pullStartY;
+    if (diff > 0) {
+      const offset = Math.min(80, diff * 0.45);
+      setPullOffset(offset);
+      if (diff > 10 && e.cancelable) {
+        e.preventDefault();
+      }
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullStartY === null) return;
+    setPullStartY(null);
+    if (pullOffset >= 50 && !isRefreshing) {
+      setIsRefreshing(true);
+      setPullOffset(40);
+      try {
+        navigator.vibrate?.(30);
+        await fetchConvs();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setTimeout(() => {
+          setIsRefreshing(false);
+          setPullOffset(0);
+        }, 600);
+      }
+    } else {
+      setPullOffset(0);
+    }
+  };
+
   useEffect(() => {
     if (user?.role === 'guest') return;
 
-    const fetchConvs = async () => {
-      try {
-        const { data } = await axios.get('http://localhost:3500/api/inbox/conversations', {
+    fetchConvs().then((data) => {
+      if (!data) return;
+      const selectUser = location.state?.selectUser;
+      if (selectUser) {
+        axios.post('http://localhost:3500/api/inbox/conversations', {
+          userId: selectUser._id
+        }, {
           headers: { Authorization: `Bearer ${token}` }
-        });
-        setConversations(data);
-
-        // Auto-select user if passed in state
-        const selectUser = location.state?.selectUser;
-        if (selectUser) {
-          const res = await axios.post('http://localhost:3500/api/inbox/conversations', {
-            userId: selectUser._id
-          }, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-
+        }).then(res => {
           const existing = data.find(c => c._id === res.data._id);
           if (existing) {
             openConversation(existing);
@@ -57,24 +110,20 @@ const InboxPage = () => {
             setConversations(prev => [newConv, ...prev]);
             openConversation(newConv);
           }
-        }
-      } catch (err) {
-        console.error('Error fetching conversations:', err);
+        }).catch(console.error);
       }
-    };
-    fetchConvs();
+    });
 
     socket.on('private-message', (msg) => {
       if (activeConv && (msg.sender === activeConv._id || msg.sender._id === activeConv._id || msg.sender === user._id)) {
         setMessages(prev => [...prev, msg]);
       } else {
-        // refresh list
         fetchConvs();
       }
     });
 
     return () => socket.off('private-message');
-  }, [token, activeConv, socket, user._id, location.state]);
+  }, [token, activeConv, socket, user?._id, location.state]);
 
   const handleSend = (data) => {
     const receiverId = activeConv.participants.find(p => p._id !== user._id)._id;
@@ -107,7 +156,32 @@ const InboxPage = () => {
 
   return (
     <div className="flex h-[100dvh] bg-gray-900 text-white">
-      <div className="w-full md:w-1/3 border-r border-gray-700 p-4 overflow-y-auto">
+      <div 
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="w-full md:w-1/3 border-r border-gray-700 p-4 overflow-y-auto relative"
+      >
+        {/* Pull to Refresh Indicator */}
+        <div 
+          style={{
+            height: `${pullOffset}px`,
+            opacity: pullOffset > 0 ? 1 : 0,
+            transition: pullStartY === null ? 'height 0.2s, opacity 0.2s' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            background: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: '12px',
+            marginBottom: pullOffset > 0 ? '12px' : '0'
+          }}
+        >
+          <span className={isRefreshing ? 'animate-spin inline-block' : ''} style={{ fontSize: '1rem', color: '#cbd5e1', fontWeight: 'bold' }}>
+            {isRefreshing ? '🔄 Refreshing...' : '👇 Pull to refresh'}
+          </span>
+        </div>
+
         <h2 className="text-2xl font-bold mb-4">Inbox</h2>
         {conversations.map(conv => {
           const otherUser = conv.participants.find(p => p._id !== user._id);

@@ -15,6 +15,12 @@ const NotificationBell = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const handleOpen = () => setIsOpen(prev => !prev);
+    window.addEventListener('open-notifications', handleOpen);
+    return () => window.removeEventListener('open-notifications', handleOpen);
+  }, []);
+
+  useEffect(() => {
     const fetchNotifications = async () => {
       try {
         const { data } = await axios.get('http://localhost:3500/api/notifications', {

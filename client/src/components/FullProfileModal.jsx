@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -8,6 +8,7 @@ import {
   FaAddressCard, FaHeart, FaEnvelope, FaKey, FaCog, FaLock, FaSignOutAlt, FaTrash, FaUserFriends, FaChevronDown, FaSave,
   FaCamera
 } from 'react-icons/fa';
+import ImageLightbox from './ImageLightbox';
 
 const NAVY = '#1e3d75';
 
@@ -18,6 +19,37 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('info'); // 'info' | 'friends' | 'gifts' | 'account' | 'more'
   const [isSettingsView, setIsSettingsView] = useState(false);
+  const [viewingImage, setViewingImage] = useState(null);
+  const [showCoverMenu, setShowCoverMenu] = useState(false);
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+
+  const handleRemoveCover = async () => {
+    if (!window.confirm("Remove cover photo?")) return;
+    try {
+      const { data } = await axios.put(`http://localhost:3500/api/users/profile`, { coverPhoto: '' }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProfile(data.user || data);
+      updateUser({ ...currentUser, coverPhoto: '' });
+      alert("Cover photo removed.");
+    } catch (err) {
+      alert("Error removing cover photo.");
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!window.confirm("Remove profile picture?")) return;
+    try {
+      const { data } = await axios.put(`http://localhost:3500/api/users/profile`, { profilePic: '' }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProfile(data.user || data);
+      updateUser({ ...currentUser, profilePic: '' });
+      alert("Profile picture removed.");
+    } catch (err) {
+      alert("Error removing profile picture.");
+    }
+  };
 
   const [subModal, setSubModal] = useState(null);
   
@@ -33,9 +65,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
   const [newPassword, setNewPassword] = useState('');
   const [reenterPassword, setReenterPassword] = useState('');
 
-  const [manageFriendsList, setManageFriendsList] = useState([]);
-  const [manageIgnoresList, setManageIgnoresList] = useState([]);
-  const [manageGiftsList, setManageGiftsList] = useState([]);
+
 
   const [prefCall, setPrefCall] = useState('On');
   const [prefPrivateChat, setPrefPrivateChat] = useState('On');
@@ -293,41 +323,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
 
   
   
-  useEffect(() => {
-    if (subModal === 'manage_friends') {
-      axios.get('http://localhost:3500/api/users/friends', {
-        headers: { Authorization: `Bearer ${token}` }
-      }).then(res => setManageFriendsList(res.data)).catch(err => console.error(err));
-    } else if (subModal === 'manage_ignores') {
-      axios.get('http://localhost:3500/api/users/ignores', {
-        headers: { Authorization: `Bearer ${token}` }
-      }).then(res => setManageIgnoresList(res.data)).catch(err => console.error(err));
-    } else if (subModal === 'manage_gifts') {
-      setManageGiftsList(profile?.gifts || []);
-    }
-  }, [subModal, token, profile]);
 
-  const handleRemoveFriend = async (friendId) => {
-    try {
-      await axios.delete(`http://localhost:3500/api/users/friends/${friendId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setManageFriendsList(prev => prev.filter(f => f._id !== friendId));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleUnignoreUser = async (ignoredId) => {
-    try {
-      await axios.post(`http://localhost:3500/api/users/unignore/${ignoredId}`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setManageIgnoresList(prev => prev.filter(u => u._id !== ignoredId));
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
 
   const handleSavePassword = async () => {
@@ -671,10 +667,43 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Time Zone</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">State</label>
                 <div className="relative">
                   <select value={langTimezone} onChange={e => setLangTimezone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-700 appearance-none focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                    <option value="Asia/Kolkata">Asia/Kolkata</option><option value="America/New_York">America/New_York</option>
+                    <option value="Andhra Pradesh">Andhra Pradesh</option>
+                    <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                    <option value="Assam">Assam</option>
+                    <option value="Bihar">Bihar</option>
+                    <option value="Chhattisgarh">Chhattisgarh</option>
+                    <option value="Goa">Goa</option>
+                    <option value="Gujarat">Gujarat</option>
+                    <option value="Haryana">Haryana</option>
+                    <option value="Himachal Pradesh">Himachal Pradesh</option>
+                    <option value="Jharkhand">Jharkhand</option>
+                    <option value="Karnataka">Karnataka</option>
+                    <option value="Kerala">Kerala</option>
+                    <option value="Madhya Pradesh">Madhya Pradesh</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Manipur">Manipur</option>
+                    <option value="Meghalaya">Meghalaya</option>
+                    <option value="Mizoram">Mizoram</option>
+                    <option value="Nagaland">Nagaland</option>
+                    <option value="Odisha">Odisha</option>
+                    <option value="Punjab">Punjab</option>
+                    <option value="Rajasthan">Rajasthan</option>
+                    <option value="Sikkim">Sikkim</option>
+                    <option value="Tamil Nadu">Tamil Nadu</option>
+                    <option value="Telangana">Telangana</option>
+                    <option value="Tripura">Tripura</option>
+                    <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    <option value="Uttarakhand">Uttarakhand</option>
+                    <option value="West Bengal">West Bengal</option>
+                    <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+                    <option value="Chandigarh">Chandigarh</option>
+                    <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="Lakshadweep">Lakshadweep</option>
+                    <option value="Puducherry">Puducherry</option>
                   </select>
                   <FaChevronDown className="absolute right-4 top-3.5 text-slate-400 text-xs pointer-events-none" />
                 </div>
@@ -686,6 +715,70 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
           )}
 
 
+          {subModal === 'manage_ignores' && (
+            <div className="flex flex-col gap-4 mt-2">
+              <h2 className="text-xl font-bold text-slate-800">Manage ignores</h2>
+              {(() => {
+                const ignoredList = JSON.parse(localStorage.getItem('ignoredUsers') || '[]');
+                if (ignoredList.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center p-12 text-slate-500 text-center">
+                      <div className="text-gray-300 mb-4 opacity-50 select-none">
+                         <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 512 512" height="72" width="72" xmlns="http://www.w3.org/2000/svg"><path d="M256 512c141.4 0 256-114.6 256-256S397.4 0 256 0S0 114.6 0 256S114.6 512 256 512zM176.4 176a32 32 0 1 1 0 64 32 32 0 1 1 0-64zm128 32a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zm-84.3 128.7c22.6-18.1 53-18.1 75.7 0c14.2 11.4 34.6 9.1 46-5.1s9.1-34.6-5.1-46c-45-36-110.1-36-155.1 0c-14.2 11.4-16.4 31.8-5.1 46s31.8 16.4 46 5.1z"></path></svg>
+                      </div>
+                      <div className="text-sm font-extrabold text-slate-400">Your ignore list is empty</div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="max-h-[50vh] overflow-y-auto space-y-2">
+                    {ignoredList.map(uid => (
+                      <div key={uid} className="flex items-center justify-between p-3 border rounded-xl bg-slate-50">
+                        <span className="font-semibold text-slate-700">Ignored User ({uid.substring(uid.length - 4)})</span>
+                        <button className="text-xs text-red-500 font-bold px-2 py-1 bg-red-50 hover:bg-red-100 rounded" onClick={() => {
+                          const updated = ignoredList.filter(id => id !== uid);
+                          localStorage.setItem('ignoredUsers', JSON.stringify(updated));
+                          setSubModal(null); setTimeout(() => setSubModal('manage_ignores'), 0);
+                        }}>Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {subModal === 'manage_friends' && (
+            <div className="flex flex-col gap-4 mt-2">
+              <h2 className="text-xl font-bold text-slate-800">Manage friends</h2>
+              {(!friends || friends.length === 0) ? (
+                 <div className="flex flex-col items-center justify-center p-12 text-slate-500 text-center">
+                   <div className="text-gray-300 mb-4 opacity-50 select-none">
+                     <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 512 512" height="72" width="72" xmlns="http://www.w3.org/2000/svg"><path d="M256 512c141.4 0 256-114.6 256-256S397.4 0 256 0S0 114.6 0 256S114.6 512 256 512zM176.4 176a32 32 0 1 1 0 64 32 32 0 1 1 0-64zm128 32a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zm-84.3 128.7c22.6-18.1 53-18.1 75.7 0c14.2 11.4 34.6 9.1 46-5.1s9.1-34.6-5.1-46c-45-36-110.1-36-155.1 0c-14.2 11.4-16.4 31.8-5.1 46s31.8 16.4 46 5.1z"></path></svg>
+                   </div>
+                   <div className="text-sm font-extrabold text-slate-400">there are no friends yet</div>
+                 </div>
+              ) : (
+                <div className="max-h-[50vh] overflow-y-auto space-y-2">
+                  {friends.map(friend => (
+                    <div key={friend._id} className="flex items-center justify-between p-3 border rounded-xl bg-slate-50">
+                      <div className="flex items-center gap-3">
+                        <img src={friend.profilePic || `https://ui-avatars.com/api/?name=${friend.username}`} className="w-10 h-10 rounded-full object-cover" />
+                        <span className="font-bold text-slate-700">{friend.username}</span>
+                      </div>
+                      <button className="text-slate-400 hover:text-slate-700 font-bold p-2" onClick={async () => {
+                         if (!window.confirm('Remove friend?')) return;
+                         try {
+                           await axios.delete(`http://localhost:3500/api/users/friends/${friend._id}`, { headers: { Authorization: `Bearer ${token}` } });
+                           setFriends(friends.filter(f => f._id !== friend._id));
+                         } catch (e) { alert('Error removing friend'); }
+                      }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
       </div>
@@ -836,9 +929,10 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" 
       onClick={onClose}
     >
+      {viewingImage && <ImageLightbox src={viewingImage} onClose={() => setViewingImage(null)} />}
       <div 
         className="bg-white w-full max-w-md rounded-[24px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh] relative" 
-        onClick={e => e.stopPropagation()}
+        onClick={e => { e.stopPropagation(); setShowCoverMenu(false); setShowAvatarMenu(false); }}
       >
         {renderSubModal()}
 
@@ -878,7 +972,8 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
 
         {/* HEADER AREA - BLUE / COVER PHOTO */}
         <div 
-          className="bg-[#244273] w-full px-5 py-5 relative flex flex-col items-center min-h-[160px] justify-center transition-all duration-300 overflow-hidden"
+          onClick={() => { if(profile.coverPhoto && !profile.coverPhoto.includes('gradient')) setViewingImage(profile.coverPhoto) }}
+          className="bg-[#244273] w-full px-5 py-5 relative flex flex-col items-center min-h-[160px] justify-center transition-all duration-300 cursor-pointer"
           style={{
             backgroundImage: profile.coverPhoto && (profile.coverPhoto.startsWith('http') || profile.coverPhoto.startsWith('/') || profile.coverPhoto.startsWith('data:'))
               ? `url(${profile.coverPhoto})` 
@@ -898,13 +993,34 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
           )}
 
           {profile._id === currentUser._id && !uploadingCover && (
-            <button 
-              onClick={() => coverInputRef.current?.click()}
-              className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white rounded-full p-2.5 transition backdrop-blur-sm cursor-pointer shadow-lg border border-white/20 z-20"
-              title="Change Cover Photo"
-            >
-              <FaCamera size={14} />
-            </button>
+            <div className="absolute top-4 right-4 z-30">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowCoverMenu(!showCoverMenu); setShowAvatarMenu(false); }}
+                className="bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition backdrop-blur-sm cursor-pointer shadow-lg border border-white/20"
+                title="Manage Cover Photo"
+              >
+                <FaCamera size={12} />
+              </button>
+              
+              {showCoverMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl py-1 overflow-hidden border border-gray-100 z-50">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); coverInputRef.current?.click(); setShowCoverMenu(false); }}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm font-semibold text-gray-700 cursor-pointer"
+                  >
+                    Add new profile
+                  </button>
+                  {profile.coverPhoto && !profile.coverPhoto.includes('gradient') && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleRemoveCover(); setShowCoverMenu(false); }}
+                      className="w-full text-left px-4 py-3 hover:bg-red-50 text-sm font-semibold text-red-600 cursor-pointer"
+                    >
+                      Remove current profile
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           
           {/* Top Icons Row */}
@@ -956,9 +1072,10 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
           <div className="relative mt-2 mb-3 group/avatar z-10">
             <div className="relative w-24 h-24 rounded-full border-2 border-white shadow-lg overflow-hidden bg-slate-800">
               <img 
+                onClick={(e) => { e.stopPropagation(); if (profile.profilePic) setViewingImage(profile.profilePic) }}
                 src={profile.profilePic || `https://ui-avatars.com/api/?name=${profile.username}&background=0284c7&color=fff&size=128`} 
                 alt="avatar" 
-                className={`w-full h-full object-cover transition-opacity duration-300 ${uploadingAvatar ? 'opacity-40' : 'opacity-100'}`}
+                className={`w-full h-full object-cover transition-opacity duration-300 cursor-pointer ${uploadingAvatar ? 'opacity-40' : 'opacity-100'}`}
               />
               {uploadingAvatar && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40">
@@ -971,13 +1088,34 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
             )}
             
             {profile._id === currentUser._id && !uploadingAvatar && (
-              <button
-                onClick={() => avatarInputRef.current?.click()}
-                className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 transition shadow-md border-2 border-white cursor-pointer"
-                title="Change Profile Picture"
-              >
-                <FaCamera size={12} />
-              </button>
+              <div className="absolute bottom-0 right-0 z-30">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowAvatarMenu(!showAvatarMenu); setShowCoverMenu(false); }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 transition shadow-md border-2 border-white cursor-pointer"
+                  title="Manage Profile Picture"
+                >
+                  <FaCamera size={12} />
+                </button>
+                
+                {showAvatarMenu && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl py-1 overflow-hidden border border-gray-100 z-50">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); avatarInputRef.current?.click(); setShowAvatarMenu(false); }}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm font-semibold text-gray-700 cursor-pointer"
+                    >
+                      Add new profile
+                    </button>
+                    {profile.profilePic && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleRemoveAvatar(); setShowAvatarMenu(false); }}
+                        className="w-full text-left px-4 py-3 hover:bg-red-50 text-sm font-semibold text-red-600 cursor-pointer"
+                      >
+                        Remove current profile
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -999,7 +1137,16 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
         {profile.role !== 'guest' && (
           <div className="bg-[#f2f2f2] px-6 py-4 flex justify-center border-b border-gray-200">
             <div className="flex gap-2 bg-[#e6e6e6] p-1 rounded-xl">
-              {(isSettingsView ? ['Account', 'More'] : ['Info', 'Friends', 'Gifts']).map(tab => (
+              {(() => {
+                let tabs = ['Info', 'Friends', 'Gifts'];
+                if (isSettingsView) {
+                  tabs = ['Account', 'More'];
+                } else {
+                  if (profile.privacy?.showFriendList === false) tabs = tabs.filter(t => t !== 'Friends');
+                  if (profile.privacy?.showGiftList === false) tabs = tabs.filter(t => t !== 'Gifts');
+                }
+                return tabs;
+              })().map(tab => (
                 <button 
                   key={tab}
                   onClick={() => setActiveTab(tab.toLowerCase())}
@@ -1076,6 +1223,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
           {activeTab === 'info' && (
             <div className="flex flex-col py-2 px-6">
               
+              {(isSettingsView || profile.privacy?.showAge !== false) && (
               <div className="flex items-center justify-between py-4 border-b border-black/5">
                 <div className="flex items-center gap-4">
                   <FaCalendarAlt size={18} className="text-slate-700" />
@@ -1083,7 +1231,9 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
                 </div>
                 <span className="text-[15px] text-slate-600">{profile.age || '18'} years old</span>
               </div>
+              )}
               
+              {(isSettingsView || profile.privacy?.showGender !== false) && (
               <div className="flex items-center justify-between py-4 border-b border-black/5">
                 <div className="flex items-center gap-4">
                   <span className="text-[18px]">⚧</span>
@@ -1091,7 +1241,9 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
                 </div>
                 <span className="text-[15px] text-slate-600 capitalize">{profile.gender || 'Male'}</span>
               </div>
+              )}
 
+              {(isSettingsView || profile.privacy?.showLocation !== false) && (
               <div className="flex items-center justify-between py-4 border-b border-black/5">
                 <div className="flex items-center gap-4">
                   <FaGlobe size={18} className="text-slate-700" />
@@ -1099,6 +1251,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
                 </div>
                 <span className="text-[15px] text-slate-600">{profile.country || 'India'}</span>
               </div>
+              )}
 
               <div className="flex items-center justify-between py-4 border-b border-black/5">
                 <div className="flex items-center gap-4">
@@ -1113,7 +1266,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
                   <FaUserPlus size={18} className="text-slate-700" />
                   <span className="text-[15px] font-bold text-slate-800">Member since</span>
                 </div>
-                <span className="text-[15px] text-slate-600">{new Date(profile.createdAt || Date.now()).toISOString().split('T')[0]}</span>
+                <span className="text-[15px] text-slate-600">{profile.createdAt ? new Date(profile.createdAt).toISOString().split('T')[0] : 'N/A'}</span>
               </div>
 
               <div className="flex items-center justify-between py-4 border-b border-black/5">
@@ -1132,7 +1285,9 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
                 <span className="text-[15px] text-slate-600">
                   {isOnline 
                     ? 'Online now' 
-                    : new Date(profile.lastSeen || Date.now()).toLocaleString('en-IN', { hour12: false }).replace(',', '')}
+                    : (profile.lastSeen 
+                      ? new Date(profile.lastSeen).toLocaleString('en-IN', { hour12: false }).replace(',', '') 
+                      : 'N/A')}
                 </span>
               </div>
 
@@ -1409,217 +1564,7 @@ const modalContentStyle = {
   fontFamily: 'system-ui, -apple-system, sans-serif',
 };
 
-const topBarStyle = {
-  background: NAVY,
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '14px 16px 8px 16px',
-};
 
-const topStatsStyle = {
-  display: 'flex',
-  gap: '8px',
-};
-
-const topBadgeStyle = {
-  background: 'rgba(255, 255, 255, 0.15)',
-  color: '#fff',
-  borderRadius: '12px',
-  padding: '4px 10px',
-  fontSize: '0.75rem',
-  fontWeight: 'bold',
-};
-
-const likeBadgeStyle = (liked) => ({
-  background: liked ? '#2196f3' : 'rgba(255, 255, 255, 0.15)',
-  border: 'none',
-  color: '#fff',
-  borderRadius: '12px',
-  padding: '4px 10px',
-  fontSize: '0.75rem',
-  fontWeight: 'bold',
-  cursor: 'pointer',
-  outline: 'none',
-});
-
-const topActionsStyle = {
-  display: 'flex',
-  gap: '12px',
-};
-
-const iconActionStyle = {
-  background: 'none',
-  border: 'none',
-  color: '#90caf9',
-  fontSize: '0.95rem',
-  cursor: 'pointer',
-  padding: '4px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-};
-
-const iconCloseStyle = {
-  background: 'none',
-  border: 'none',
-  color: '#ffffff',
-  fontSize: '1.05rem',
-  cursor: 'pointer',
-  padding: '4px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-};
-
-const headerCardStyle = {
-  background: NAVY,
-  padding: '12px 20px 24px 20px',
-  textAlign: 'center',
-  borderBottomLeftRadius: '24px',
-  borderBottomRightRadius: '24px',
-  color: '#fff',
-};
-
-const avatarStyle = {
-  width: '84px',
-  height: '84px',
-  borderRadius: '50%',
-  border: '3px solid #fff',
-  objectFit: 'cover',
-};
-
-const onlineIndicatorStyle = {
-  position: 'absolute',
-  bottom: '4px',
-  right: '4px',
-  width: '14px',
-  height: '14px',
-  background: '#4caf50',
-  borderRadius: '50%',
-  border: '2px solid #fff',
-};
-
-const verifiedBadgeStyle = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  background: 'rgba(255, 255, 255, 0.12)',
-  padding: '3px 10px',
-  borderRadius: '12px',
-  fontSize: '0.7rem',
-  fontWeight: 'bold',
-  marginTop: '10px',
-  color: '#ffd600',
-};
-
-const usernameHeaderStyle = {
-  margin: '10px 0 0 0',
-  fontSize: '1.25rem',
-  fontWeight: '800',
-  letterSpacing: '0.5px',
-};
-
-const tabsContainerStyle = {
-  display: 'flex',
-  background: '#f2f2f2',
-  padding: '6px',
-  margin: '16px 20px 10px 20px',
-  borderRadius: '12px',
-};
-
-const tabButtonStyle = (isActive) => ({
-  flex: 1,
-  background: isActive ? '#fff' : 'transparent',
-  border: 'none',
-  padding: '8px 4px',
-  borderRadius: '10px',
-  fontSize: '0.8rem',
-  fontWeight: 'bold',
-  color: isActive ? '#333' : '#777',
-  cursor: 'pointer',
-  transition: 'background 0.2s',
-  boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-});
-
-const tabContentWorkspaceStyle = {
-  padding: '10px 20px 24px 20px',
-  maxHeight: '260px',
-  overflowY: 'auto',
-};
-
-const infoListStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '14px',
-};
-
-const infoRowStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '14px',
-  borderBottom: '1px solid #f9f9f9',
-  paddingBottom: '8px',
-};
-
-const infoIconStyle = {
-  fontSize: '1.1rem',
-  width: '24px',
-  textAlign: 'center',
-};
-
-const infoLabelContainerStyle = {
-  flex: 1,
-};
-
-const infoLabelStyle = {
-  fontSize: '0.7rem',
-  color: '#888',
-  fontWeight: 'bold',
-};
-
-const infoValueStyle = {
-  fontSize: '0.85rem',
-  color: '#222',
-  fontWeight: '600',
-};
-
-const friendsListStyle = {
-  padding: '8px 0',
-};
-
-const friendsGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(4, 1fr)',
-  gap: '12px',
-};
-
-const friendCardStyle = {
-  textAlign: 'center',
-};
-
-const friendAvatarStyle = {
-  width: '42px',
-  height: '42px',
-  borderRadius: '50%',
-  objectFit: 'cover',
-};
-
-const friendNameStyle = {
-  fontSize: '0.65rem',
-  color: '#555',
-  fontWeight: 'bold',
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  marginTop: '4px',
-};
-
-const emptyStateStyle = {
-  textAlign: 'center',
-  color: '#777',
-  fontSize: '0.8rem',
-  padding: '20px',
-};
 
 const spinnerStyle = {
   width: '32px',
@@ -1644,40 +1589,7 @@ const closeBtnBottomStyle = {
 };
 
 // Virtual Gifting & Dropdown overlay styles matching picture mocks perfectly
-const giftsTabContainerStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(3, 1fr)',
-  gap: '10px',
-  padding: '10px 0',
-};
 
-const giftCardStyle = {
-  background: '#ffffff',
-  borderRadius: '16px',
-  border: '1px solid #f1f5f9',
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-  padding: '16px 8px',
-  textAlign: 'center',
-  position: 'relative',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  transition: 'transform 0.2s',
-};
-
-const giftIconStyle = {
-  fontSize: '2.5rem',
-  marginBottom: '6px',
-  display: 'block',
-  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.08))',
-};
-
-const giftLabelStyle = {
-  fontSize: '0.75rem',
-  fontWeight: 'bold',
-  color: '#64748b',
-};
 
 const giftBadgeStyle = {
   position: 'absolute',

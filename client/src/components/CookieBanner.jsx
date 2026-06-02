@@ -1,14 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const CookieBanner = () => {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(() => {
+    return !localStorage.getItem('cookieAccepted');
+  });
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const { pathname } = useLocation();
 
   useEffect(() => {
-    // Check if the user has already accepted cookies
-    const cookieAccepted = localStorage.getItem('cookieAccepted');
-    if (!cookieAccepted) {
-      setIsVisible(true);
-    }
+
+    // Handle screen resize for mobile responsiveness
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleAccept = () => {
@@ -16,29 +23,43 @@ const CookieBanner = () => {
     setIsVisible(false);
   };
 
-  if (!isVisible) return null;
+  // Only show on authentication-related pages (like /auth, /login, /register)
+  // and explicitly hide on the Landing Page (/)
+  const isAuthPage = ['/auth', '/login', '/register'].includes(pathname);
+
+  if (!isVisible || !isAuthPage) return null;
 
   return (
     <div 
       style={{
         position: 'fixed',
-        bottom: '24px',
+        bottom: isMobile ? '16px' : '24px',
         left: '50%',
         transform: 'translateX(-50%)',
         width: '90%',
         maxWidth: '800px',
         background: '#ffffff',
-        borderRadius: '12px',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-        padding: '20px 24px',
+        borderRadius: '16px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.18)',
+        padding: isMobile ? '18px' : '20px 24px',
         display: 'flex',
-        alignItems: 'center',
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'stretch' : 'center',
         justifyContent: 'space-between',
-        gap: '24px',
+        gap: isMobile ? '16px' : '24px',
         zIndex: 9999,
+        border: '1px solid rgba(0, 0, 0, 0.05)',
+        fontFamily: "'Segoe UI', Roboto, sans-serif"
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+      <div 
+        style={{ 
+          display: 'flex', 
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'flex-start' : 'center', 
+          gap: isMobile ? '14px' : '20px' 
+        }}
+      >
         {/* Cookie Icon SVG */}
         <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
           <circle cx="32" cy="32" r="28" fill="#F4B874"/>
@@ -56,11 +77,11 @@ const CookieBanner = () => {
         </svg>
 
         <div>
-          <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', color: '#1e293b', fontWeight: 'bold' }}>
+          <h3 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', color: '#1e293b', fontWeight: 'bold' }}>
             About cookies we use
           </h3>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569', lineHeight: '1.4' }}>
-            We uses cookies to provide necessary website functionality, such as allowing your device to be logged in. By using our website, you agree to this and agree to our <a href="#" style={{ color: '#475569', textDecoration: 'underline' }}>Privacy Policy</a>.
+          <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569', lineHeight: '1.45' }}>
+            We use cookies to provide necessary website functionality, such as allowing your device to remain logged in. By using our website, you agree to this and agree to our <a href="#" style={{ color: '#4f46e5', textDecoration: 'underline', fontWeight: '500' }}>Privacy Policy</a>.
           </p>
         </div>
       </div>
@@ -68,16 +89,19 @@ const CookieBanner = () => {
       <button 
         onClick={handleAccept}
         style={{
-          background: '#ec4899', // Pink button to match the image
+          background: '#ec4899', 
           color: '#ffffff',
           border: 'none',
-          borderRadius: '8px',
-          padding: '10px 32px',
+          borderRadius: '10px',
+          padding: isMobile ? '12px' : '10px 32px',
+          width: isMobile ? '100%' : 'auto',
           fontSize: '0.9rem',
           fontWeight: 'bold',
           cursor: 'pointer',
           flexShrink: 0,
-          transition: 'background 0.2s'
+          boxShadow: '0 4px 12px rgba(236, 72, 153, 0.35)',
+          transition: 'all 0.2s',
+          textAlign: 'center'
         }}
         onMouseOver={e => e.currentTarget.style.background = '#db2777'}
         onMouseOut={e => e.currentTarget.style.background = '#ec4899'}

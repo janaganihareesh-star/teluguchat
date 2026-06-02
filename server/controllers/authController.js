@@ -25,6 +25,31 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'Username already exists' });
     }
 
+    const BANNED_USERNAMES = [
+      'admin', 'moderator', 'support', 'official', 'teluguchat',
+      'fuck', 'sex', 'porn', 'nude', 'naked', 'idiot', 'stupid',
+      'bastard', 'bitch', 'scam', 'free coins', 'giveaway'
+    ];
+
+    const usernameLower = username.toLowerCase();
+    const hasBannedWord = BANNED_USERNAMES.some(word => usernameLower.includes(word));
+    const hasInvalidChars = !/^[a-zA-Z0-9_]+$/.test(username);
+    const isTooShort = username.length < 3;
+    const isTooLong = username.length > 20;
+
+    if (hasBannedWord) {
+      return res.status(400).json({ message: 'This username is not allowed. Please choose a different one.' });
+    }
+    if (hasInvalidChars) {
+      return res.status(400).json({ message: 'Username can only contain letters, numbers, and underscores.' });
+    }
+    if (isTooShort) {
+      return res.status(400).json({ message: 'Username must be at least 3 characters long.' });
+    }
+    if (isTooLong) {
+      return res.status(400).json({ message: 'Username cannot exceed 20 characters.' });
+    }
+
     const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -54,7 +79,7 @@ exports.register = async (req, res) => {
       res.status(201).json({ message: 'Registration successful. Please check your email for the OTP.' });
     } catch (emailError) {
       console.warn("Nodemailer failed to send email. Falling back to local verification:", emailError.message);
-      console.log(`[DEV ONLY] OTP for ${email} is: ${otp} (or use master OTP: 123456)`);
+
       res.status(201).json({ 
         message: 'Registration successful! (Email offline: Please use the verification code 123456 to verify your account)' 
       });
@@ -74,11 +99,11 @@ exports.verifyOTP = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (user.otp !== otp && otp !== '123456') {
+    if (user.otp !== otp) {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
 
-    if (user.otpExpiry < new Date() && otp !== '123456') {
+    if (user.otpExpiry < new Date()) {
       return res.status(400).json({ message: 'OTP has expired' });
     }
 

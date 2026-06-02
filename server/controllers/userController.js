@@ -234,6 +234,32 @@ exports.acceptFriendRequest = async (req, res) => {
     await recipient.save();
     await sender.save();
 
+    // Create a notification for the sender that their request was accepted
+    const addedNotif = new Notification({
+      recipient: senderId,
+      sender: recipientId,
+      type: 'friend_added',
+      message: `${recipient.username} accepted your friend request.`,
+      link: '/chat'
+    });
+    await addedNotif.save();
+
+    const populatedAddedNotif = await Notification.findById(addedNotif._id)
+      .populate('sender', 'username profilePic level badge role gender');
+
+    const io = req.app.get('io');
+    if (io && global.onlineUsers) {
+      // Notify sender that they were accepted (new notification)
+      const senderSocket = global.onlineUsers.get(senderId.toString());
+      if (senderSocket) {
+        io.to(senderSocket.socketId).emit('new-notification', populatedAddedNotif);
+      }
+      
+      // Also emit friend-status-updated to both users
+      io.to(senderId.toString()).emit('friend-status-updated');
+      io.to(recipientId.toString()).emit('friend-status-updated');
+    }
+
     // Mark notification as read
     notification.isRead = true;
     notification.message = `You accepted ${sender.username}'s friend request.`;
@@ -253,7 +279,6 @@ exports.acceptFriendRequest = async (req, res) => {
       .populate('sender', 'username profilePic level badge role gender');
 
     // Sockets: notify sender & trigger real-time friends list reload
-    const io = req.app.get('io');
     if (io && global.onlineUsers) {
       // 1. Notify the sender
       const senderSocket = global.onlineUsers.get(senderId.toString());
@@ -454,6 +479,27 @@ exports.blockUser = async (req, res) => {
     if (!user.blockedUsers.includes(targetId)) {
       user.blockedUsers.push(targetId);
       await user.save();
+      
+      // Create and send notification to the blocked user
+      const blockNotif = new Notification({
+        recipient: targetId,
+        sender: currentUserId,
+        type: 'blocked',
+        message: `${user.username} blocked you.`,
+        link: '/chat'
+      });
+      await blockNotif.save();
+
+      const populatedBlockNotif = await Notification.findById(blockNotif._id)
+        .populate('sender', 'username profilePic level badge role gender');
+
+      const io = req.app.get('io');
+      if (io && global.onlineUsers) {
+        const targetSocket = global.onlineUsers.get(targetId.toString());
+        if (targetSocket) {
+          io.to(targetSocket.socketId).emit('new-notification', populatedBlockNotif);
+        }
+      }
     }
 
     res.status(200).json({ message: 'User blocked successfully.' });
@@ -494,6 +540,27 @@ exports.restrictUser = async (req, res) => {
     if (!user.restrictedUsers.includes(targetId)) {
       user.restrictedUsers.push(targetId);
       await user.save();
+
+      // Create and send notification to the restricted user
+      const restrictNotif = new Notification({
+        recipient: targetId,
+        sender: currentUserId,
+        type: 'restricted',
+        message: `${user.username} restricted you.`,
+        link: '/chat'
+      });
+      await restrictNotif.save();
+
+      const populatedRestrictNotif = await Notification.findById(restrictNotif._id)
+        .populate('sender', 'username profilePic level badge role gender');
+
+      const io = req.app.get('io');
+      if (io && global.onlineUsers) {
+        const targetSocket = global.onlineUsers.get(targetId.toString());
+        if (targetSocket) {
+          io.to(targetSocket.socketId).emit('new-notification', populatedRestrictNotif);
+        }
+      }
     }
 
     // Trigger dynamic socket list updates
@@ -673,6 +740,33 @@ exports.reportUser = async (req, res) => {
   } catch (error) {
     console.error('Error reporting user:', error);
     res.status(500).json({ message: 'Error reporting user.' });
+  }
+};
+
+// Report message
+exports.reportMessage = async (req, res) => {
+  try {
+    const currentUserId = req.user.id;
+    const { messageId } = req.params;
+    const { reason, targetUserId, chatType } = req.body;
+
+    if (currentUserId === targetUserId) {
+      return res.status(400).json({ message: 'You cannot report your own message.' });
+    }
+
+    const report = new Report({
+      reporter: currentUserId,
+      reportedUser: targetUserId,
+      messageId: messageId,
+      chatType: chatType || 'general',
+      reason: reason || 'Inappropriate content'
+    });
+    await report.save();
+
+    res.status(200).json({ message: 'Message reported successfully.' });
+  } catch (error) {
+    console.error('Error reporting message:', error);
+    res.status(500).json({ message: 'Error reporting message.' });
   }
 };
 
@@ -1147,4 +1241,50 @@ exports.uploadCoverPhoto = async (req, res) => {
   }
 };
 
+exports.submitAppeal = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { type, reason } = req.body;
 
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const now = Date.now();
+    const lastAppeal = user.moderation?.lastAppealAt;
+    if (lastAppeal && now - new Date(lastAppeal).getTime() < 24 * 60 * 60 * 1000) {
+      return res.status(429).json({ message: 'You can only submit one appeal per 24 hours.' });
+    }
+
+    if (!user.moderation) user.moderation = {};
+    if (!user.moderation.appeals) user.moderation.appeals = [];
+
+    // Run AI review
+    const { reviewAppeal } = require('../utils/aiModerator');
+    const reviewResult = await reviewAppeal(userId);
+
+    user.moderation.appeals.push({
+      type,
+      reason,
+      status: reviewResult.approved ? 'reviewed' : 'pending',
+      submittedAt: new Date()
+    });
+    user.moderation.lastAppealAt = new Date();
+    await user.save();
+
+    if (reviewResult.approved) {
+      return res.status(200).json({
+        message: `✅ Your appeal was approved. ${reviewResult.reason}`,
+        approved: true
+      });
+    } else {
+      return res.status(200).json({
+        message: `❌ Your appeal was reviewed but could not be approved. ${reviewResult.reason}`,
+        approved: false
+      });
+    }
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error submitting appeal' });
+  }
+};
