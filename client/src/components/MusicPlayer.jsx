@@ -43,6 +43,15 @@ const MusicPlayer = () => {
   const track = playlist[currentTrackIdx] || { title: 'Loading...', url: '' };
 
   useEffect(() => {
+    if (track && track.url) {
+      const source = track.url.startsWith('http') ? 'External' : 'Local';
+      console.log(`[MusicPlayer] Selected Track: "${track.title}"`);
+      console.log(`[MusicPlayer] URL: ${track.url}`);
+      console.log(`[MusicPlayer] Source: ${source}`);
+    }
+  }, [track.url]);
+
+  useEffect(() => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.play().catch(e => console.log('Autoplay blocked', e));
@@ -112,12 +121,14 @@ const MusicPlayer = () => {
       {track.url && (
         <audio
           ref={audioRef}
-          src={`http://localhost:3500${track.url}`}
+          src={track.url.startsWith('http') ? track.url : `http://localhost:3500${track.url}`}
           onTimeUpdate={handleTimeUpdate}
+          onCanPlay={() => console.log(`[MusicPlayer] Audio loaded successfully: ${track.title}`)}
           onEnded={handleEnded}
-          onError={() => {
-            console.log('Error playing audio, skipping to next');
-            if(playlist.length > 1) handleNext();
+          onError={(e) => {
+            console.error(`[MusicPlayer] Error playing audio for: ${track.title}`, e);
+            console.log('[MusicPlayer] Skipping to next track automatically due to error');
+            if (playlist.length > 1) handleNext();
           }}
         />
       )}

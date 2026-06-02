@@ -1,3 +1,4 @@
+// Nodemon restart trigger
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -6,6 +7,8 @@ const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
+const NodeCache = require('node-cache');
 
 // Load env vars
 dotenv.config();
@@ -107,39 +110,62 @@ app.get('/', (req, res) => {
   res.json({ message: 'Server running' });
 });
 
-// Music endpoint
-app.use('/music', express.static(path.join(__dirname, 'music')));
+const musicCache = new NodeCache({ stdTTL: 86400 }); // Cache for 24 hours
 
-app.get('/api/music', (req, res) => {
+app.get('/api/music', async (req, res) => {
   try {
-    const musicDir = path.join(__dirname, 'music');
-    if (!fs.existsSync(musicDir)) {
-      fs.mkdirSync(musicDir, { recursive: true });
-    }
-    const files = fs.readdirSync(musicDir).filter(f => f.toLowerCase().endsWith('.mp3'));
-    
-    if (files.length === 0) {
-      // Send an empty list or fallback default
+    const API_KEY = process.env.GOOGLE_DRIVE_API_KEY;
+    const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
+
+    // Return empty if Drive credentials are missing
+    if (!API_KEY || !FOLDER_ID) {
+      console.warn('[Music API] Google Drive credentials missing. Please set GOOGLE_DRIVE_API_KEY and GOOGLE_DRIVE_FOLDER_ID in .env');
       return res.json([]);
     }
 
-    const playlist = files.map(f => {
-      let cleanTitle = f.replace(/\.mp3$/i, ''); // Strip extension
-      cleanTitle = cleanTitle.replace(/[-_\s]*SenSongsMp3\.(Com|Co|Org)/gi, ''); // Strip common download site tags
-      cleanTitle = cleanTitle.replace(/SenSongsMp3/gi, ''); // Clean remaining tags
-      cleanTitle = cleanTitle.replace(/^\d+[-_\s]*/, ''); // Strip track numbers (like "1- ", "02-")
-      cleanTitle = cleanTitle.replace(/[-_]/g, ' '); // Replace hyphens/underscores with space
-      cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim(); // Collapse and trim spaces
+    const cacheKey = 'google_drive_music_playlist';
+    const cachedPlaylist = musicCache.get(cacheKey);
+    if (cachedPlaylist) {
+      return res.json(cachedPlaylist);
+    }
+
+    // Query Google Drive API
+    const driveUrl = `https://www.googleapis.com/drive/v3/files`;
+    const query = `'${FOLDER_ID}' in parents and mimeType contains 'audio/' and trashed = false`;
+    
+    const response = await axios.get(driveUrl, {
+      params: {
+        q: query,
+        key: API_KEY,
+        fields: 'files(id, name)',
+        pageSize: 1000
+      }
+    });
+
+    const files = response.data.files || [];
+    
+    if (files.length === 0) {
+      return res.json([]);
+    }
+
+    const playlist = files.map(file => {
+      let cleanTitle = file.name.replace(/\.(mp3|wav|m4a|ogg|flac)$/i, ''); 
+      cleanTitle = cleanTitle.replace(/[-_\s]*SenSongsMp3\.(Com|Co|Org)/gi, '');
+      cleanTitle = cleanTitle.replace(/SenSongsMp3/gi, ''); 
+      cleanTitle = cleanTitle.replace(/^\d+[-_\s]*/, ''); 
+      cleanTitle = cleanTitle.replace(/[-_]/g, ' '); 
+      cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim(); 
       
       return {
         title: cleanTitle,
-        url: `/music/${encodeURIComponent(f)}`
+        url: `https://drive.google.com/uc?export=download&id=${file.id}`
       };
     });
     
+    musicCache.set(cacheKey, playlist);
     res.json(playlist);
   } catch (error) {
-    console.error('Error reading music directory:', error);
+    console.error('[Music API] Error fetching from Google Drive:', error.response?.data || error.message);
     res.status(500).json({ message: 'Error fetching music playlist' });
   }
 });
