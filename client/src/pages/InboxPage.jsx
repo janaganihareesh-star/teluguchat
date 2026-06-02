@@ -5,6 +5,7 @@ import { useSocket } from '../context/SocketContext';
 import MessageBubble from '../components/MessageBubble';
 import MessageInput from '../components/MessageInput';
 import { useLocation } from 'react-router-dom';
+import api from '../services/api';
 
 const InboxPage = () => {
   const { user, token } = useContext(AuthContext);
@@ -17,7 +18,7 @@ const InboxPage = () => {
   const openConversation = async (conv) => {
     setActiveConv(conv);
     try {
-      const { data } = await axios.get(`http://localhost:3500/api/inbox/messages/${conv._id}`, {
+      const { data } = await api.get(`/api/inbox/messages/${conv._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(data);
@@ -34,7 +35,7 @@ const InboxPage = () => {
   const fetchConvs = async () => {
     if (user?.role === 'guest') return null;
     try {
-      const { data } = await axios.get('http://localhost:3500/api/inbox/conversations', {
+      const { data } = await api.get('/api/inbox/conversations', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setConversations(data);
@@ -94,7 +95,7 @@ const InboxPage = () => {
       if (!data) return;
       const selectUser = location.state?.selectUser;
       if (selectUser) {
-        axios.post('http://localhost:3500/api/inbox/conversations', {
+        api.post('/api/inbox/conversations', {
           userId: selectUser._id
         }, {
           headers: { Authorization: `Bearer ${token}` }

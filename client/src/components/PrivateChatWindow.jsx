@@ -5,6 +5,7 @@ import { useSocket } from '../context/SocketContext';
 import { FaTimes, FaExpandAlt, FaCompressAlt, FaMinus, FaPlus, FaCog, FaMicrophone, FaSmile, FaPaperclip, FaPaperPlane, FaMusic, FaImage, FaCheckCircle } from 'react-icons/fa';
 import MessageBubble from './MessageBubble';
 import ReportModal from './ReportModal';
+import api from '../services/api';
 
 const EmojiPicker = lazy(() => import('./EmojiPicker'));
 const StickerPicker = lazy(() => import('./StickerPicker'));
@@ -43,7 +44,7 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
     const initChat = async () => {
       try {
         // Get or Create conversation
-        const convRes = await axios.post('http://localhost:3500/api/inbox/conversations', {
+        const convRes = await api.post('/api/inbox/conversations', {
           userId: targetUser._id
         }, {
           headers: { Authorization: `Bearer ${token}` }
@@ -51,13 +52,13 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
         setConversation(convRes.data);
 
         // Fetch messages for this conversation
-        const msgRes = await axios.get(`http://localhost:3500/api/inbox/messages/${convRes.data._id}`, {
+        const msgRes = await api.get(`/api/inbox/messages/${convRes.data._id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setMessages(msgRes.data);
 
         // Fetch action/ignore status
-        const statusRes = await axios.get(`http://localhost:3500/api/users/actions-status/${targetUser._id}`, {
+        const statusRes = await api.get(`/api/users/actions-status/${targetUser._id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setIsIgnored(statusRes.data.isIgnored);
@@ -142,7 +143,7 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
   const handleIgnoreToggle = async () => {
     try {
       const endpoint = isIgnored ? 'unignore' : 'ignore';
-      await axios.post(`http://localhost:3500/api/users/${endpoint}/${targetUser._id}`, {}, {
+      await api.post(`/api/users/${endpoint}/${targetUser._id}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsIgnored(!isIgnored);
@@ -158,7 +159,7 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
     const reason = prompt('Enter reason for reporting this user:');
     if (reason === null) return; // user cancelled
     try {
-      await axios.post(`http://localhost:3500/api/users/report/${targetUser._id}`, { reason }, {
+      await api.post(`/api/users/report/${targetUser._id}`, { reason }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShowSettings(false);
@@ -186,7 +187,7 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
   const submitReport = async (reason) => {
     try {
       if (reportMessageData) {
-        await axios.post(`http://localhost:3500/api/users/report-message/${reportMessageData._id}`, {
+        await api.post(`/api/users/report-message/${reportMessageData._id}`, {
           reason,
           targetUserId: reportMessageData.sender._id || reportMessageData.sender,
           chatType: 'private'
@@ -426,7 +427,7 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
                   const formData = new FormData();
                   formData.append('file', file);
                   try {
-                    const res = await axios.post('http://localhost:3500/api/upload', formData, {
+                    const res = await api.post('/api/upload', formData, {
                       headers: { 
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'multipart/form-data'

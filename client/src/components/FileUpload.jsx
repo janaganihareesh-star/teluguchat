@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import axios from 'axios';
 import { FaPaperclip, FaTimes } from 'react-icons/fa';
+import api from '../services/api';
 
 const FileUpload = ({ onFileSelected, token }) => {
   const fileInputRef = useRef(null);
@@ -22,7 +23,7 @@ const FileUpload = ({ onFileSelected, token }) => {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const { data } = await axios.post('http://localhost:3500/api/upload', formData, {
+      const { data } = await api.post('/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`

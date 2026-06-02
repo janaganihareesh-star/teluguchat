@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaPlay, FaPause, FaStepForward, FaStepBackward, FaVolumeMute, FaVolumeUp, FaMusic, FaMinus } from 'react-icons/fa';
 import axios from 'axios';
+import api from '../services/api';
 
 const MusicPlayer = () => {
   const [playlist, setPlaylist] = useState([]);
@@ -16,7 +17,7 @@ const MusicPlayer = () => {
   useEffect(() => {
     const fetchMusic = async () => {
       try {
-        const { data } = await axios.get('http://localhost:3500/api/music');
+        const { data } = await api.get('/api/music');
         if (data && data.length > 0) {
           setPlaylist(data);
         } else {

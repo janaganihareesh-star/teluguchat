@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import api from '../services/api';
 import { 
   FaTimes, FaGlobe, FaLanguage, FaCalendarAlt, FaHome, FaEye, FaFlag, FaBars,
   FaExclamationTriangle, FaCommentDots, FaUserPlus, FaGift, FaWallet, FaBan, FaEdit, FaStar, FaThumbsUp,
@@ -26,7 +27,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
   const handleRemoveCover = async () => {
     if (!window.confirm("Remove cover photo?")) return;
     try {
-      const { data } = await axios.put(`http://localhost:3500/api/users/profile`, { coverPhoto: '' }, {
+      const { data } = await api.put(`/api/users/profile`, { coverPhoto: '' }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProfile(data.user || data);
@@ -40,7 +41,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
   const handleRemoveAvatar = async () => {
     if (!window.confirm("Remove profile picture?")) return;
     try {
-      const { data } = await axios.put(`http://localhost:3500/api/users/profile`, { profilePic: '' }, {
+      const { data } = await api.put(`/api/users/profile`, { profilePic: '' }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProfile(data.user || data);
@@ -165,7 +166,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
     formData.append('file', file);
 
     try {
-      const { data } = await axios.post('http://localhost:3500/api/users/profile-pic', formData, {
+      const { data } = await api.post('/api/users/profile-pic', formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -196,7 +197,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
     formData.append('file', file);
 
     try {
-      const { data } = await axios.post('http://localhost:3500/api/users/cover-photo', formData, {
+      const { data } = await api.post('/api/users/cover-photo', formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -220,7 +221,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
     const fetchProfileData = async () => {
       try {
         setLoading(true);
-        const { data } = await axios.get(`http://localhost:3500/api/users/profile/${username}`, {
+        const { data } = await api.get(`/api/users/profile/${username}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setProfile(data);
@@ -273,7 +274,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
 
         // Fetch Ignore / Restriction Actions Status
         if (data._id !== currentUser._id) {
-          const statusRes = await axios.get(`http://localhost:3500/api/users/actions-status/${data._id}`, {
+          const statusRes = await api.get(`/api/users/actions-status/${data._id}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setIsIgnored(statusRes.data.isIgnored);
@@ -294,7 +295,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
     try {
       const monthMap = { 'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5, 'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11 };
       const dobDate = new Date(editDobYear, monthMap[editDobMonth], editDobDay);
-      await axios.put('http://localhost:3500/api/users/profile', {
+      await api.put('/api/users/profile', {
         gender: editGender,
         dob: dobDate
       }, { headers: { Authorization: `Bearer ${token}` } });
@@ -309,7 +310,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
 
   const handleSaveRelationship = async () => {
     try {
-      await axios.put('http://localhost:3500/api/users/profile', {
+      await api.put('/api/users/profile', {
         relationshipStatus: editRelationship
       }, { headers: { Authorization: `Bearer ${token}` } });
       
@@ -332,7 +333,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
       return;
     }
     try {
-      await axios.put('http://localhost:3500/api/users/change-password', {
+      await api.put('/api/users/change-password', {
         currentPassword,
         newPassword
       }, { headers: { Authorization: `Bearer ${token}` } });
@@ -368,7 +369,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
         };
       }
 
-      await axios.put('http://localhost:3500/api/users/profile', payload, { headers: { Authorization: `Bearer ${token}` } });
+      await api.put('/api/users/profile', payload, { headers: { Authorization: `Bearer ${token}` } });
       
       setProfile(prev => ({ ...prev, ...payload }));
       setSubModal(null);
@@ -380,7 +381,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
 
   const handleSaveEmail = async () => {
     try {
-      await axios.put('http://localhost:3500/api/users/change-email', {
+      await api.put('/api/users/change-email', {
         newEmail: editEmail,
         password: editPassword
       }, { headers: { Authorization: `Bearer ${token}` } });
@@ -769,7 +770,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
                       <button className="text-slate-400 hover:text-slate-700 font-bold p-2" onClick={async () => {
                          if (!window.confirm('Remove friend?')) return;
                          try {
-                           await axios.delete(`http://localhost:3500/api/users/friends/${friend._id}`, { headers: { Authorization: `Bearer ${token}` } });
+                           await api.delete(`/api/users/friends/${friend._id}`, { headers: { Authorization: `Bearer ${token}` } });
                            setFriends(friends.filter(f => f._id !== friend._id));
                          } catch (e) { alert('Error removing friend'); }
                       }}>✕</button>
@@ -818,7 +819,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
   const handleLike = async () => {
     if (profile._id === currentUser._id) return;
     try {
-      const { data } = await axios.post(`http://localhost:3500/api/users/profile/${profile._id}/like`, {}, {
+      const { data } = await api.post(`/api/users/profile/${profile._id}/like`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setLikes(data.likes);
@@ -839,7 +840,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
   const handleAddFriendAction = async () => {
     setShowMenu(false);
     try {
-      const { data } = await axios.post(`http://localhost:3500/api/users/friend-request/${profile._id}`, {}, {
+      const { data } = await api.post(`/api/users/friend-request/${profile._id}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert(data.message || 'Friend request sent successfully.');
@@ -852,7 +853,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
     setShowMenu(false);
     const endpoint = isIgnored ? 'unignore' : 'ignore';
     try {
-      const { data } = await axios.post(`http://localhost:3500/api/users/${endpoint}/${profile._id}`, {}, {
+      const { data } = await api.post(`/api/users/${endpoint}/${profile._id}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsIgnored(!isIgnored);
@@ -865,7 +866,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
   const handleReportSubmit = async () => {
     setShowReport(false);
     try {
-      const { data } = await axios.post(`http://localhost:3500/api/users/report/${profile._id}`, {
+      const { data } = await api.post(`/api/users/report/${profile._id}`, {
         reason: reportReason
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -880,7 +881,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
     if (sendingGiftKey) return;
     setSendingGiftKey(giftKey);
     try {
-      const { data } = await axios.post(`http://localhost:3500/api/users/send-gift/${profile._id}`, {
+      const { data } = await api.post(`/api/users/send-gift/${profile._id}`, {
         giftName: giftKey
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -908,7 +909,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
     const amount = Number(coinsToShare);
     if (!amount || amount <= 0) return;
     try {
-      const { data } = await axios.post(`http://localhost:3500/api/users/transfer-coins/${profile._id}`, {
+      const { data } = await api.post(`/api/users/transfer-coins/${profile._id}`, {
         amount
       }, {
         headers: { Authorization: `Bearer ${token}` }

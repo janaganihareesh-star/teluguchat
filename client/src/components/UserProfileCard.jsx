@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import axios from 'axios';
+import api from '../services/api';
 
 const NAVY = '#1e3d75';
 
@@ -21,7 +22,7 @@ const UserProfileCard = ({ user: targetUser, position, onClose, onPrivate, onVie
     const fetchStatus = async () => {
       if (!targetUser || !currentUser || targetUser._id === currentUser._id || !token) return;
       try {
-        const { data } = await axios.get(`http://localhost:3500/api/users/actions-status/${targetUser._id}`, {
+        const { data } = await api.get(`/api/users/actions-status/${targetUser._id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setActionsStatus(data);
@@ -39,7 +40,7 @@ const UserProfileCard = ({ user: targetUser, position, onClose, onPrivate, onVie
     setLoading(true);
     try {
       const endpoint = actionsStatus.isBlocked ? 'unblock' : 'block';
-      await axios.post(`http://localhost:3500/api/users/${endpoint}/${targetUser._id}`, {}, {
+      await api.post(`/api/users/${endpoint}/${targetUser._id}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setActionsStatus(prev => ({ ...prev, isBlocked: !prev.isBlocked }));
@@ -57,7 +58,7 @@ const UserProfileCard = ({ user: targetUser, position, onClose, onPrivate, onVie
     setLoading(true);
     try {
       const endpoint = actionsStatus.isRestricted ? 'unrestrict' : 'restrict';
-      await axios.post(`http://localhost:3500/api/users/${endpoint}/${targetUser._id}`, {}, {
+      await api.post(`/api/users/${endpoint}/${targetUser._id}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setActionsStatus(prev => ({ ...prev, isRestricted: !prev.isRestricted }));
@@ -74,7 +75,7 @@ const UserProfileCard = ({ user: targetUser, position, onClose, onPrivate, onVie
     if (targetUser._id === currentUser._id) return;
     setLoading(true);
     try {
-      const { data } = await axios.post(`http://localhost:3500/api/users/friend-request/${targetUser._id}`, {}, {
+      const { data } = await api.post(`/api/users/friend-request/${targetUser._id}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert(data.message || 'Friend request sent successfully.');

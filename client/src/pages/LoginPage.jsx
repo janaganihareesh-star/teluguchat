@@ -2,6 +2,7 @@ import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import api from '../services/api';
 
 const GRAD = 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)';
 const PRIMARY = '#4f46e5';
@@ -20,7 +21,7 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
     try {
-      const { data } = await axiosInstance.post('http://localhost:3500/api/auth/login', { email, password });
+      const { data } = await api.post('/api/auth/login', { email, password });
       login(data.user, data.token);
       navigate('/chat');
     } catch (err) {

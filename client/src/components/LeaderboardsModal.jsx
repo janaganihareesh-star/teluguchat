@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import api from '../services/api';
 
 const LeaderboardsModal = ({ onClose, onSelectUser, token }) => {
   const [selectedType, setSelectedType] = useState(null);
@@ -24,7 +25,7 @@ const LeaderboardsModal = ({ onClose, onSelectUser, token }) => {
       setLoading(true);
       setError('');
       try {
-        const { data } = await axios.get(`http://localhost:3500/api/users/leaderboard?type=${selectedType}`, {
+        const { data } = await api.get(`/api/users/leaderboard?type=${selectedType}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUsers(data || []);

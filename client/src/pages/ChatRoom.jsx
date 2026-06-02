@@ -24,6 +24,7 @@ import LeaderboardsModal from '../components/LeaderboardsModal';
 import ReportModal from '../components/ReportModal';
 import { soundSystem } from '../utils/soundSystem';
 import usePushNotification from '../hooks/usePushNotification';
+import api from '../services/api';
 
 
 
@@ -111,7 +112,7 @@ const ChatRoom = () => {
   }, [activePrivateChatUser]);
 
   useEffect(() => {
-    axios.get(`http://localhost:3500/api/messages/${roomId}`, {
+    api.get(`/api/messages/${roomId}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => setMessages(res.data))
@@ -281,7 +282,7 @@ const ChatRoom = () => {
   const fetchConvs = async () => {
     if (!token || user?.role === 'guest') return;
     try {
-      const { data } = await axios.get('http://localhost:3500/api/inbox/conversations', {
+      const { data } = await api.get('/api/inbox/conversations', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setConversations(data);
@@ -309,7 +310,7 @@ const ChatRoom = () => {
 
   const handleMarkAllInboxRead = async () => {
     try {
-      await axios.put('http://localhost:3500/api/inbox/read-all', {}, {
+      await api.put('/api/inbox/read-all', {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchConvs();
@@ -321,7 +322,7 @@ const ChatRoom = () => {
   const handleClearAllInbox = async () => {
     if (!window.confirm('Are you sure you want to clear all conversations?')) return;
     try {
-      await axios.delete('http://localhost:3500/api/inbox/clear-all', {
+      await api.delete('/api/inbox/clear-all', {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchConvs();
@@ -358,7 +359,7 @@ const ChatRoom = () => {
   const submitReport = async (reason) => {
     try {
       if (reportMessageData) {
-        await axios.post(`http://localhost:3500/api/users/report-message/${reportMessageData._id}`, {
+        await api.post(`/api/users/report-message/${reportMessageData._id}`, {
           reason,
           targetUserId: reportMessageData.sender._id,
           chatType: 'general'

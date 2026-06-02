@@ -4,6 +4,7 @@ import { useSocket } from '../context/SocketContext';
 import { AuthContext } from '../context/AuthContext';
 import UserBadge from './UserBadge';
 import axios from 'axios';
+import api from '../services/api';
 
 const OnlineUsers = ({ onSelectUser, onClose, theme = 'dark' }) => {
   const { socket, onlineUsers, isConnected, reconnecting } = useSocket();
@@ -18,7 +19,7 @@ const OnlineUsers = ({ onSelectUser, onClose, theme = 'dark' }) => {
   const fetchFriends = async () => {
     if (!token) return;
     try {
-      const { data } = await axios.get('http://localhost:3500/api/users/friends', {
+      const { data } = await api.get('/api/users/friends', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFriends(data);
@@ -55,7 +56,7 @@ const OnlineUsers = ({ onSelectUser, onClose, theme = 'dark' }) => {
     e.stopPropagation();
     if (!window.confirm('Are you sure you want to remove this friend?')) return;
     try {
-      await axios.delete(`http://localhost:3500/api/users/friends/${friendId}`, {
+      await api.delete(`/api/users/friends/${friendId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFriends();

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from 'axios';
+import api from '../services/api';
 
 const GRAD = 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)';
 const PRIMARY = '#4f46e5';
@@ -33,7 +34,7 @@ const RegisterPage = () => {
       const birthYear = parseInt(form.year);
       const age = new Date().getFullYear() - birthYear;
 
-      await axiosInstance.post('http://localhost:3500/api/auth/register', {
+      await api.post('/api/auth/register', {
         username: form.username,
         password: form.password,
         email: form.email,

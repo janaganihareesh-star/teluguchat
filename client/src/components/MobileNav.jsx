@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { useSocket } from '../context/SocketContext';
 import axios from 'axios';
+import api from '../services/api';
 
 const NAVY = '#0f172a'; // Sleek dark slate
 const ACTIVE_PINK = '#ec4899'; // Vibrant premium pink
@@ -30,7 +31,7 @@ const MobileNav = () => {
     const fetchPrivateUnread = async () => {
       if (!token || user?.role === 'guest') return;
       try {
-        const { data } = await axios.get('http://localhost:3500/api/inbox/conversations', {
+        const { data } = await api.get('/api/inbox/conversations', {
           headers: { Authorization: `Bearer ${token}` }
         });
         const unreads = data.reduce((sum, conv) => sum + (conv.unreadCount?.[user?._id] || 0), 0);

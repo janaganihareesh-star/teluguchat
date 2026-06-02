@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaMicrophone } from 'react-icons/fa';
 import axios from 'axios';
+import api from '../services/api';
 
 const VoiceRecorder = ({ onVoiceRecorded, token }) => {
   const [recording, setRecording] = useState(false);
@@ -120,7 +121,7 @@ const VoiceRecorder = ({ onVoiceRecorded, token }) => {
     const formData = new FormData();
     formData.append('file', blob, 'voice.webm');
     try {
-      const { data } = await axios.post('http://localhost:3500/api/upload/voice', formData, {
+      const { data } = await api.post('/api/upload/voice', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`

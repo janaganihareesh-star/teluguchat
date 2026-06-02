@@ -6,6 +6,7 @@ import { useSocket } from '../context/SocketContext';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { soundSystem } from '../utils/soundSystem';
+import api from '../services/api';
 
 const NotificationBell = () => {
   const { notifications, totalUnread, addNotification, markRead, setNotifications } = useContext(NotificationContext);
@@ -23,7 +24,7 @@ const NotificationBell = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const { data } = await axios.get('http://localhost:3500/api/notifications', {
+        const { data } = await api.get('/api/notifications', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setNotifications(data);
@@ -47,7 +48,7 @@ const NotificationBell = () => {
     }
 
     try {
-      await axios.put(`http://localhost:3500/api/notifications/${notif._id}/read`, {}, {
+      await api.put(`/api/notifications/${notif._id}/read`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       markRead(notif._id);
@@ -61,7 +62,7 @@ const NotificationBell = () => {
   const handleAcceptFriend = async (e, notif) => {
     e.stopPropagation();
     try {
-      await axios.post(`http://localhost:3500/api/users/friend-request/${notif._id}/accept`, {}, {
+      await api.post(`/api/users/friend-request/${notif._id}/accept`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       markRead(notif._id);
@@ -80,7 +81,7 @@ const NotificationBell = () => {
   const handleDeclineFriend = async (e, notif) => {
     e.stopPropagation();
     try {
-      await axios.post(`http://localhost:3500/api/users/friend-request/${notif._id}/reject`, {}, {
+      await api.post(`/api/users/friend-request/${notif._id}/reject`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       markRead(notif._id);
@@ -98,7 +99,7 @@ const NotificationBell = () => {
 
   const handleMarkAllRead = async () => {
     try {
-      await axios.put('http://localhost:3500/api/notifications/read-all', {}, {
+      await api.put('/api/notifications/read-all', {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));

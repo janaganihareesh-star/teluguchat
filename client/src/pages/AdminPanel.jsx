@@ -3,6 +3,7 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { FaBan, FaMicrophoneSlash, FaCrown, FaUsers, FaChartBar, FaLock, FaVolumeMute } from 'react-icons/fa';
+import api from '../services/api';
 
 const AdminPanel = () => {
   const { token } = useContext(AuthContext);
@@ -16,7 +17,7 @@ const AdminPanel = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const { data } = await axios.get('http://localhost:3500/api/admin/users', {
+        const { data } = await api.get('/api/admin/users', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUsers(data);
@@ -29,7 +30,7 @@ const AdminPanel = () => {
 
   const handleAction = async (action, userId, username, body = {}) => {
     try {
-      await axios.post(`http://localhost:3500/api/admin/${action}/${userId}`, body, {
+      await api.post(`/api/admin/${action}/${userId}`, body, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert(`Action ${action} successful on ${username}`);

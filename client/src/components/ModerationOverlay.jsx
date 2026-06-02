@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import api from '../services/api';
 
 export default function ModerationOverlay({ event, onClose }) {
   const [timeLeft, setTimeLeft] = useState(null);
@@ -15,7 +16,7 @@ export default function ModerationOverlay({ event, onClose }) {
 
   const handleAppeal = async () => {
     try {
-      const res = await axios.post('http://localhost:3500/api/users/appeal', {
+      const res = await api.post('/api/users/appeal', {
         type: event.type,
         reason: 'Requesting review of moderation action.'
       }, {
