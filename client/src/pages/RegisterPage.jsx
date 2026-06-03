@@ -56,7 +56,7 @@ const RegisterPage = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
-      <div style={{ background: '#fff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '380px', boxShadow: '0 24px 80px rgba(0,0,0,0.3)', color: '#1f2937' }}>
+      <div style={{ background: '#fff', borderRadius: '20px', padding: '24px', width: '90%', maxWidth: '330px', boxShadow: '0 24px 80px rgba(0,0,0,0.3)', color: '#1f2937' }}>
         <h2 style={{ textAlign: 'center', color: PRIMARY, marginBottom: '24px', fontSize: '1.4rem', fontWeight: 'bold' }}>✏️ Create Account</h2>
         
         {error && <div style={{ background: '#ffebee', color: '#c62828', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', textAlign: 'center' }}>{error}</div>}

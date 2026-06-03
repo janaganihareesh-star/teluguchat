@@ -7,68 +7,44 @@ const initDailyNewsCron = (app) => {
   
   const generateFallbackNews = async () => {
     const fallbackQuotes = [
-      "Success anedi final kadhu, failure anedi fatal kadhu: continue ayye dhairyame important!",
-      "Ninnati kante eroju inka better ga undalani korukuntunnam!",
-      "Mee meedha meeku confidence unte, half success energy vachinatle.",
-      "Mee constructive thoughts ye mee future ni decide chesthayi.",
-      "Dream big, and avi nijam cheskovadaniki regular ga work cheyandi.",
-      "Prathi minute oka kotha chance. Danni miss cheskokandi!",
-      "Failure anedi success ki first step.",
-      "Mee hard work mimmalni eppatikaina high position lo nilabeduthundi.",
-      "Success anedi oka journey, destination kaadhu.",
-      "Kashtalu mana weak spots ni chupiyadaniki raavu, mana power ni baytaki thiyadaniki vasthayi.",
-      "Ninnati kante eroju inka better ga marali mana life lo.",
-      "Dhairyam ye mana life lo big weapon."
+      "Motivational Quote: 'Success lines and goals correct-e, kani nee smile chusinappudu vache happiness ae ultimate goal!' Keep blushing! 🥰",
+      "Sweet thought: 'Prapancham lo unique and beautiful smile needhe... Danni single day kooda miss cheskoku!' Have a gorgeous day! 💕",
+      "Sweet Quote: 'Nee eyes lo look, nee lip paina smile... Ivi chuste evaraina flat aipovalsinde! Be confident, you are amazing!' 😉",
+      "Motivation: 'Life short ga undi, so direct ga sweet words cheppeyandi... Evarni gurtucheskuni blush avutunnav? Direct ga message chesey!' 🥰",
+      "Lovely thought: 'Nee smile thone roju start chesthe aa kick-e verappa! Keep smiling, it suits you so much! 😊'",
+      "Cute Quote: 'Beautiful things happen when you smile. So, don't forget to keep that cute smile on your face today!' 🌸",
+      "Romantic Quote: 'Mana life lo perfect song vethikite dorakatledu, kani nee voice vinagane direct hit! Have a lovely day! 💖'",
+      "Cute Thought: 'Evaro okaru nee gurinchi aalochistu happy ga smile chestunnaru eroju... Maybe it's because of your lovely heart!' ✨",
+      "Sweet Vibe: 'Nee navve nee beauty, nee confidence-e nee success. Keep shining and smiling today!' 🥰",
+      "Motivational Quote: 'Aa problems anni control lo ki vachestayi, kani nuvvu happy ga smile chesindhe aa roju complete success! Have a happy day!' 😊"
     ];
 
     const fallbackQuestions = [
-      "Mee life lo choosina dynamic and beautiful place edi?",
-      "Meeku baga nachina book or movie enti and character enduku nachindi?",
-      "Mee life lo meeru respect chese first person evaru?",
-      "Mee childhood friends tho unna best memory organic details cheppandi?",
-      "Meeku super power unte em cheyali anukuntunnaru?",
-      "Eroju mee mood ela undi? Oka emoji tho match cheyandi!",
-      "Meeku nachina comfort food / Telugu dish edi?",
-      "Mee free time lo ekkuva em cheyadam ishtam?",
-      "Mee life lo life-changing/memorable travel memories cheppandi?",
-      "Meeku loop lo vine favourite song/track enti eroju?",
-      "Mee favourite cricketer or sports player evaru?",
-      "Meeku happy ga anipinche tiny thing enti daily life lo?"
+      "Eroju Question: Evaraina mimmalni chusi blush ayyeలా look ichara? Tell us that cute story! 🥰",
+      "Community Question: Ee chat room lo evari texts chusi nee lip paina first smile vasthundi? Tag them! 😉",
+      "Question: Nee favorite person screen paina kanipiste nee face lo oche blushing percentage entha? 100% or more? 📈💕",
+      "Question of the Day: Evarnaina secretly care chestunnara? Direct ga chepakunda sweet hint ivvandi! ✨",
+      "Question: Cute moments check... Meeku first crush/love eppudu and ela aindi? share check! 💖",
+      "Question of the Day: Mee partner or crush chesina details lo meeku extreme happiness and blushing teche element enti? 🌸",
+      "Question: Oka track or song vinnappudu immediate ga evari details gurtosthayi? Tag or describe them! 🎵",
+      "Question of the Day: Eroju mee morning look chusi mirror ayna blush aindha leda? Describe your gorgeous smile! 🥰"
     ];
 
-
-
     const fallbackSongs = [
-      "Idi vinu baguntadi: 'Samajavaragamana' from Ala Vaikunthapurramuloo 🎵",
-      "Idi vinu baguntadi: 'Butta Bomma' from Ala Vaikunthapurramuloo 🎵",
-      "Idi vinu baguntadi: 'Naatu Naatu' from RRR 🎵",
-      "Idi vinu baguntadi: 'Neeli Neeli Aakasam' from 30 Rojullo Preminchadam Ela 🎵",
-      "Idi vinu baguntadi: 'Chitti' from Jathi Ratnalu 🎵",
-      "Idi vinu baguntadi: 'Inkem Inkem Inkem Kaavaale' from Geetha Govindam 🎵",
-      "Idi vinu baguntadi: 'Srivalli' from Pushpa 🎵",
-      "Idi vinu baguntadi: 'Adiga Adiga' from Ninnu Kori 🎵",
-      "Idi vinu baguntadi: 'Oosupodu' from Fidaa 🎵",
-      "Idi vinu baguntadi: 'Priyathama Priyathama' from Majili 🎵",
-      "Idi vinu baguntadi: 'Sidda Sidda' from Arjun Reddy 🎵",
-      "Idi vinu baguntadi: 'Telusa Telusa' from Sarrainodu 🎵",
-      "Idi vinu baguntadi: 'Nee Kannu Neeli Samudram' from Uppena 🎵",
-      "Idi vinu baguntadi: 'Undiporaadhey' from Hushaaru 🎵",
-      "Idi vinu baguntadi: 'Anantham' from Jersey 🎵",
-      "Idi vinu baguntadi: 'Mellaga Mellaga' from Varsham 🎵",
-      "Idi vinu baguntadi: 'Nuvvostanante Nennoddantana' from Varsham 🎵",
-      "Idi vinu baguntadi: 'My Love Is Gone' from Arya 2 🎵",
-      "Idi vinu baguntadi: 'Ringa Ringa' from Arya 2 🎵",
-      "Idi vinu baguntadi: 'Karige Loga' from Arya 2 🎵",
-      "Idi vinu baguntadi: 'Cinema Choopistha Mava' from Race Gurram 🎵",
-      "Idi vinu baguntadi: 'Sweety' from Race Gurram 🎵",
-      "Idi vinu baguntadi: 'Pranaama' from Janatha Garage 🎵",
-      "Idi vinu baguntadi: 'Apple Beauty' from Janatha Garage 🎵",
-      "Idi vinu baguntadi: 'Aagadu' from Aagadu 🎵",
-      "Idi vinu baguntadi: 'Dookudu' from Dookudu 🎵",
-      "Idi vinu baguntadi: 'Poovai Poovai' from Dookudu 🎵",
-      "Idi vinu baguntadi: 'Nenunnanani' from Nenunnanu 🎵",
-      "Idi vinu baguntadi: 'Evare' from Premam 🎵",
-      "Idi vinu baguntadi: 'Kallolam' from Pelli Choopulu 🎵"
+      "Idi vinu, standard blush vibes: 'Samajavaragamana' from Ala Vaikunthapurramuloo 🎵",
+      "Vintunte auto ga blushing: 'Butta Bomma' from Ala Vaikunthapurramuloo 🎵",
+      "Romantic loop entry: 'Nee Kannu Neeli Samudram' from Uppena 🎵",
+      "Sweet blush overload: 'Inkem Inkem Inkem Kaavaale' from Geetha Govindam 🎵",
+      "Sweet blush: 'Chitti Nee Navvante' from Jathi Ratnalu 🎵",
+      "Vibe checks out for cute blush: 'Kallolam' from Pelli Choopulu 🎵",
+      "Pure heart touching vibe: 'Adiga Adiga' from Ninnu Kori 🎵",
+      "Cute loop song: 'Undiporaadhey' from Hushaaru 🎵",
+      "Romantic classic: 'Mellaga Mellaga' from Varsham 🎵",
+      "Auto smiling song: 'Arere Arere' from Happy Days 🎵",
+      "Pure blushing melody: 'O Rendu Prema Meghalu' from Baby 🎵",
+      "Cute sweet vibes: 'Hoyna Hoyna' from Gang Leader 🎵",
+      "Sweet loop melody: 'Hrudayama' from Major 🎵",
+      "Melody of the year: 'Priyathama Priyathama' from Majili 🎵"
     ];
 
     // Select based on day of year to guarantee a different one every day
@@ -147,19 +123,19 @@ If it IS a special day:
 - Set 'type' to "festival".
 
 If it is NOT a major special day (just a regular day), generate exactly these 3 things:
-1. A Motivational Quote
-2. A thought-provoking General Question for the community
-3. A Telugu or Indian Song Suggestion
+1. A Motivational Quote / Cute Thought
+2. A thought-provoking, cute, or engaging General Question for the community (e.g. about crushes, love stories, sweet memories, things that make them blush/smile)
+3. A Telugu or Indian Song Suggestion (preferably cute, romantic, or soulful)
 Combine all 3 nicely into the 'content' field using HTML formatting (e.g., <br> or <strong>). Do NOT add extra chit-chat.
 - Set 'type' to "motivation".
 
 CRITICAL LANGUAGE REQUIREMENT:
 The response ("title" and "content") MUST be written in a friendly, conversational mix of Telugu and English (code-mixed "Tanglish" / "Telugu-English" chat style) using ONLY the English/Latin alphabet (do NOT use Telugu script/Telugu letters).
-Write it exactly how young Telugu people chat online or talk to friends. E.g.:
-- "Success anedi final kadhu, failure anedi fatal kadhu: continue ayye dhairyame important!"
-- "Eroju question of the day: Mee childhood friends tho unna best memory organic details cheppandi?"
-- "Ee song vinu, chaala melodious ga transition baguntadi: 'Samajavaragamana' from Ala Vaikunthapurramuloo 🎵"
-- "Happy Diwali friends! Eroju mana family tho sweets తింటూ safely crackers kalchandi!"
+Write it exactly how young Telugu people chat online or talk to friends. The content must make the readers smile and blush! E.g.:
+- "Motivational Quote: 'Success lines and goals correct-e, kani nee smile chusinappudu vache happiness ae ultimate goal!' Keep blushing! 🥰"
+- "Eroju Question: Ee chat room lo evari texts chusi nee lip paina first smile vasthundi? Tag them! 😉"
+- "Ee song vinu, extreme blushing vibes in loop: 'Samajavaragamana' from Ala Vaikunthapurramuloo 🎵"
+- "Happy Diwali friends! Eroju mana families tho sweet things share chestu safely crackers kalchandi!"
 
 The response MUST be a valid JSON object matching this schema exactly, and NO markdown wrapping or backticks around it:
 {

@@ -638,7 +638,7 @@ const ChatRoom = () => {
       <div className="flex-1 flex overflow-hidden">
         
         {/* CHAT MESSAGES PORT */}
-        <div className="flex-1 flex flex-col overflow-hidden border-r relative" style={{ backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
+        <div className="flex-1 flex flex-col overflow-hidden border-r relative" style={{ background: 'var(--bg-pattern)', backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
           <style>{`
             @keyframes pulseGlow {
               0% { box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4); }

@@ -20,7 +20,7 @@ const AccountSettingsModal = ({ onClose, profile }) => {
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white w-full max-w-md rounded-[24px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="bg-white w-full max-w-[340px] sm:max-w-md rounded-[24px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         
         {/* HEADER AREA - BLUE */}
         <div className="bg-[#244273] px-5 py-5 relative flex flex-col items-center">
@@ -77,7 +77,7 @@ const AccountSettingsModal = ({ onClose, profile }) => {
         </div>
 
         {/* TABS ROW */}
-        <div className="bg-[#f2f2f2] px-6 py-4 flex justify-center border-b border-gray-200">
+        <div className="bg-[#f2f2f2] px-4 py-3 sm:px-6 sm:py-4 flex justify-center border-b border-gray-200">
           <div className="flex gap-2 bg-[#e6e6e6] p-1 rounded-xl">
             <button 
               onClick={() => setActiveTab('account')}
@@ -98,59 +98,59 @@ const AccountSettingsModal = ({ onClose, profile }) => {
         <div className="flex-1 overflow-y-auto bg-[#f8f9fa]">
           
           {activeTab === 'account' && (
-            <div className="flex flex-col py-2">
-              <button className="flex items-center gap-4 px-6 py-4 hover:bg-black/5 transition text-slate-700 border-b border-black/5 last:border-0">
+            <div className="flex flex-col py-1.5">
+              <button className="flex items-center gap-4 px-4 py-3 sm:px-6 sm:py-3.5 hover:bg-black/5 transition text-slate-700 border-b border-black/5 last:border-0">
                 <FaAddressCard size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Edit info</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Edit info</span>
               </button>
-              <button className="flex items-center gap-4 px-6 py-4 hover:bg-black/5 transition text-slate-700 border-b border-black/5 last:border-0">
+              <button className="flex items-center gap-4 px-4 py-3 sm:px-6 sm:py-3.5 hover:bg-black/5 transition text-slate-700 border-b border-black/5 last:border-0">
                 <FaHeart size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Edit relationship</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Edit relationship</span>
               </button>
-              <button className="flex items-center gap-4 px-6 py-4 hover:bg-black/5 transition text-slate-700 border-b border-black/5 last:border-0">
+              <button className="flex items-center gap-4 px-4 py-3 sm:px-6 sm:py-3.5 hover:bg-black/5 transition text-slate-700 border-b border-black/5 last:border-0">
                 <FaEnvelope size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Edit email</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Edit email</span>
               </button>
-              <button className="flex items-center gap-4 px-6 py-4 hover:bg-black/5 transition text-slate-700 border-b border-black/5 last:border-0">
+              <button className="flex items-center gap-4 px-4 py-3 sm:px-6 sm:py-3.5 hover:bg-black/5 transition text-slate-700 border-b border-black/5 last:border-0">
                 <FaKey size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Change password</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Change password</span>
               </button>
             </div>
           )}
 
           {activeTab === 'more' && (
-            <div className="flex flex-col py-2">
-              <button className="flex items-center gap-4 px-6 py-3.5 hover:bg-black/5 transition text-slate-700 border-b border-black/5">
+            <div className="flex flex-col py-1.5">
+              <button className="flex items-center gap-4 px-4 py-2.5 sm:px-6 sm:py-3 hover:bg-black/5 transition text-slate-700 border-b border-black/5">
                 <FaGift size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Gifts</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Gifts</span>
               </button>
-              <button className="flex items-center gap-4 px-6 py-3.5 hover:bg-black/5 transition text-slate-700 border-b border-black/5">
+              <button className="flex items-center gap-4 px-4 py-2.5 sm:px-6 sm:py-3 transition text-slate-700 border-b border-black/5">
                 <FaUserFriends size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Manage friends</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Manage friends</span>
               </button>
-              <button className="flex items-center gap-4 px-6 py-3.5 hover:bg-black/5 transition text-slate-700 border-b border-black/5">
+              <button className="flex items-center gap-4 px-4 py-2.5 sm:px-6 sm:py-3 transition text-slate-700 border-b border-black/5">
                 <FaBan size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Manage ignores</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Manage ignores</span>
               </button>
-              <button className="flex items-center gap-4 px-6 py-3.5 hover:bg-black/5 transition text-slate-700 border-b border-black/5">
+              <button className="flex items-center gap-4 px-4 py-2.5 sm:px-6 sm:py-3 transition text-slate-700 border-b border-black/5">
                 <FaCog size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Preferences</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Preferences</span>
               </button>
-              <button className="flex items-center gap-4 px-6 py-3.5 hover:bg-black/5 transition text-slate-700 border-b border-black/5">
+              <button className="flex items-center gap-4 px-4 py-2.5 sm:px-6 sm:py-3 transition text-slate-700 border-b border-black/5">
                 <FaLock size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Privacy settings</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Privacy settings</span>
               </button>
-              <button className="flex items-center gap-4 px-6 py-3.5 hover:bg-black/5 transition text-slate-700 border-b border-black/5">
+              <button className="flex items-center gap-4 px-4 py-2.5 sm:px-6 sm:py-3 transition text-slate-700 border-b border-black/5">
                 <FaGlobe size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Language/Location</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Language/Location</span>
               </button>
-              <button className="flex items-center gap-4 px-6 py-3.5 hover:bg-black/5 transition text-slate-700 border-b border-black/5">
+              <button className="flex items-center gap-4 px-4 py-2.5 sm:px-6 sm:py-3 transition text-slate-700 border-b border-black/5">
                 <FaSignOutAlt size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Logout options</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Logout options</span>
               </button>
-              <button className="flex items-center gap-4 px-6 py-3.5 hover:bg-black/5 transition text-slate-700">
+              <button className="flex items-center gap-4 px-4 py-2.5 sm:px-6 sm:py-3 transition text-slate-700">
                 <FaTrash size={18} className="text-slate-600" />
-                <span className="text-[15px] font-medium">Delete account</span>
+                <span className="text-[14px] sm:text-[15px] font-medium">Delete account</span>
               </button>
             </div>
           )}

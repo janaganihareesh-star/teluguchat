@@ -35,7 +35,7 @@ const LoginPage = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
-      <div style={{ background: '#fff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '380px', boxShadow: '0 24px 80px rgba(0,0,0,0.3)', color: '#1f2937' }}>
+      <div style={{ background: '#fff', borderRadius: '20px', padding: '24px', width: '90%', maxWidth: '330px', boxShadow: '0 24px 80px rgba(0,0,0,0.3)', color: '#1f2937' }}>
         <h2 style={{ textAlign: 'center', color: PRIMARY, marginBottom: '8px', fontSize: '1.4rem', fontWeight: 'bold' }}>🔑 Account Login</h2>
         <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.9rem', marginBottom: '20px', fontWeight: '500' }}>Hope you have a beautiful day! 😊</p>
         

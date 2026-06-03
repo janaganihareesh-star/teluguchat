@@ -932,7 +932,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
     >
       {viewingImage && <ImageLightbox src={viewingImage} onClose={() => setViewingImage(null)} />}
       <div 
-        className="bg-white w-full max-w-md rounded-[24px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh] relative" 
+        className="bg-white w-full max-w-[350px] sm:max-w-md rounded-[24px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh] relative" 
         onClick={e => { e.stopPropagation(); setShowCoverMenu(false); setShowAvatarMenu(false); }}
       >
         {renderSubModal()}

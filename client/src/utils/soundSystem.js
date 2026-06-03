@@ -60,8 +60,12 @@ class SoundSystem {
 
   // A helper to play beautifully shaped "plucks" or "pops" like modern apps
   playPremiumTone({ freqs, type = 'sine', duration, vol, envelope = 'pop' }, forcePlay = false) {
+    this.init();
     if (!this.ctx) return;
-    if (!this.unlocked && this.ctx.state !== 'running') return;
+
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(err => console.warn("Failed to resume AudioContext:", err));
+    }
 
     const now = Date.now();
     if (!forcePlay && now - this.lastPlayTime < this.cooldownMs) return;

@@ -211,10 +211,10 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
     position: 'fixed',
     bottom: '20px',
     right: '20px',
-    width: isMaximized ? 'calc(100% - 40px)' : 'min(380px, calc(100vw - 40px))',
-    height: isMaximized ? 'calc(100% - 80px)' : '480px',
-    maxHeight: isMaximized ? '90vh' : '480px',
-    background: '#ffffff',
+    width: isMaximized ? 'calc(100% - 40px)' : 'min(310px, calc(100vw - 32px))',
+    height: isMaximized ? 'calc(100% - 80px)' : '420px',
+    maxHeight: isMaximized ? '90vh' : '420px',
+    background: 'var(--bg-panel)',
     borderRadius: '16px',
     boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
     zIndex: 950,
@@ -223,10 +223,12 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
     overflow: 'hidden',
     transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
     fontFamily: 'system-ui, -apple-system, sans-serif',
+    color: 'var(--text-main)',
+    border: '1px solid var(--border-color)',
   };
 
   const headerStyle = {
-    background: NAVY,
+    background: 'var(--accent)',
     height: '50px',
     padding: '0 16px',
     display: 'flex',
@@ -265,8 +267,8 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
     position: 'absolute',
     top: '44px',
     right: '48px',
-    background: '#ffffff',
-    border: '1px solid #e0e0e0',
+    background: 'var(--bg-panel)',
+    border: '1px solid var(--border-color)',
     borderRadius: '10px',
     boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
     zIndex: 960,
@@ -283,7 +285,7 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
     fontSize: '0.8rem',
     fontWeight: 'bold',
     cursor: 'pointer',
-    color: '#333',
+    color: 'var(--text-main)',
     outline: 'none',
   };
 
@@ -384,9 +386,9 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
       {/* CHAT BODY */}
       {!isMinimized && (
         <>
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', background: 'var(--bg-pattern)', backgroundColor: 'var(--bg-app)', display: 'flex', flexDirection: 'column' }}>
             {messages.length === 0 ? (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                 <span style={{ fontSize: '2rem', marginBottom: '6px' }}>💬</span>
                 <span>No messages yet. Say hello!</span>
               </div>
@@ -413,7 +415,7 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
           </div>
 
           {/* CHAT FOOTER INPUT */}
-          <div style={{ padding: '10px 14px', borderTop: '1px solid #e2e8f0', background: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px', position: 'relative', flexShrink: 0 }}>
+          <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-panel)', display: 'flex', alignItems: 'center', gap: '8px', position: 'relative', flexShrink: 0 }}>
             {/* Attachment Button */}
             <label style={{ ...footerBtnStyle, cursor: 'pointer' }} title="Add attachment">
               <FaPaperclip />
@@ -531,7 +533,7 @@ const footerBtnStyle = {
 };
 
 const sendBtnStyle = {
-  background: NAVY,
+  background: 'var(--accent)',
   color: '#ffffff',
   border: 'none',
   borderRadius: '50%',
@@ -549,12 +551,12 @@ const sendBtnStyle = {
 
 const inputStyle = {
   flex: 1,
-  background: '#f1f5f9',
-  border: 'none',
+  background: 'var(--bg-app)',
+  border: '1px solid var(--border-color)',
   borderRadius: '20px',
   padding: '8px 16px',
   fontSize: '0.85rem',
-  color: '#1e293b',
+  color: 'var(--text-main)',
   outline: 'none',
 };
 

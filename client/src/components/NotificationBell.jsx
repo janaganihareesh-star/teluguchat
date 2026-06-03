@@ -120,7 +120,7 @@ const NotificationBell = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200/80 rounded-2xl shadow-xl z-50 overflow-hidden text-slate-800">
+        <div className="absolute right-[-45px] sm:right-0 mt-2 w-[290px] sm:w-80 bg-white border border-slate-200/80 rounded-2xl shadow-xl z-50 overflow-hidden text-slate-800">
           <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
             <h3 className="font-extrabold text-slate-800 text-sm">Notifications</h3>
             {totalUnread > 0 && (

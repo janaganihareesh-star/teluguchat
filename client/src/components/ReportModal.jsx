@@ -14,7 +14,7 @@ const ReportModal = ({ isOpen, onClose, onSubmit }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div 
-        className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200"
+        className="bg-white rounded-2xl w-full max-w-[340px] sm:max-w-md p-5 sm:p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200"
         onClick={e => e.stopPropagation()}
       >
         <button 

@@ -18,7 +18,7 @@ const ThemeModal = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-sans" onClick={onClose}>
       <div 
-        className="bg-white rounded-2xl w-full max-w-4xl p-4 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto" 
+        className="bg-white rounded-2xl w-full max-w-4xl p-3 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto" 
         onClick={e => e.stopPropagation()}
       >
         <button 
@@ -27,15 +27,15 @@ const ThemeModal = ({ onClose }) => {
         >
           ✕
         </button>
-
+ 
         <h2 className="text-xl font-extrabold text-slate-800 mb-6 text-center">Select Theme</h2>
-
-        <div className="flex flex-wrap gap-5 justify-center">
+ 
+        <div className="flex flex-wrap gap-4 sm:gap-5 justify-center">
           {themeOptions.map((t) => (
             <div 
               key={t.id} 
               onClick={() => changeTheme(t.id)}
-              className={`w-[260px] rounded-[18px] overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] border-4 ${theme === t.id ? 'border-sky-500 shadow-[0_0_0_4px_rgba(14,165,233,0.3)]' : 'border-transparent shadow-md'}`}
+              className={`w-[225px] sm:w-[260px] rounded-[18px] overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] border-4 ${theme === t.id ? 'border-sky-500 shadow-[0_0_0_4px_rgba(14,165,233,0.3)]' : 'border-transparent shadow-md'}`}
               style={{ background: t.bodyBg }}
             >
               {/* Card Header */}
