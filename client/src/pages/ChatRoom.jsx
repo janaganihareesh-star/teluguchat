@@ -397,11 +397,11 @@ const ChatRoom = () => {
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4 shrink-0">
           {/* Online Users Toggle (Mobile only) */}
           <button 
             onClick={() => setShowOnlineSidebar(!showOnlineSidebar)}
-            className="p-2 hover:opacity-80 rounded-lg transition flex md:hidden items-center justify-center text-lg"
+            className="p-1 md:p-2 hover:opacity-80 rounded-lg transition flex md:hidden items-center justify-center text-base md:text-lg shrink-0"
             style={{ color: 'var(--text-main)' }}
             title="Toggle Online Users"
           >
@@ -410,13 +410,15 @@ const ChatRoom = () => {
           <button 
             onClick={() => window.location.reload()} 
             title="Refresh Page" 
-            className="p-2 hover:opacity-80 rounded-lg transition flex items-center justify-center text-sm"
+            className="p-1 md:p-2 hover:opacity-80 rounded-lg transition flex items-center justify-center text-xs md:text-sm shrink-0"
             style={{ color: 'var(--text-main)' }}
           >
             <FaSyncAlt />
           </button>
-          <NotificationBell />
-          <div className="relative">
+          <div className="shrink-0 scale-90 md:scale-100">
+            <NotificationBell />
+          </div>
+          <div className="relative shrink-0">
             <button 
               onClick={() => {
                 if (user?.role === 'guest') {
@@ -426,7 +428,7 @@ const ChatRoom = () => {
                 setShowInboxDropdown(!showInboxDropdown);
               }} 
               title="Private Messenger" 
-              className="p-2 hover:opacity-80 rounded-lg transition relative flex items-center justify-center"
+              className="p-1 md:p-2 hover:opacity-80 rounded-lg transition relative flex items-center justify-center text-base md:text-lg shrink-0"
               style={{ color: 'var(--text-main)' }}
             >
               📩
@@ -522,15 +524,15 @@ const ChatRoom = () => {
           </div>
           
           
-          <div className="relative">
+          <div className="relative shrink-0">
             <button 
               onClick={() => setShowUserMenu(!showUserMenu)} 
-              className="w-9 h-9 rounded-full overflow-hidden border-2 border-white cursor-pointer hover:opacity-90 transition flex items-center justify-center focus:outline-none"
+              className="w-7 h-7 md:w-9 h-9 rounded-full overflow-hidden border-2 border-white cursor-pointer hover:opacity-90 transition flex items-center justify-center focus:outline-none shrink-0"
             >
               {user?.profilePic ? (
-                <img src={user.profilePic} alt="avatar" className="w-full h-full object-cover" />
+                <img src={user.profilePic} alt="avatar" className="w-full h-full object-cover shrink-0" />
               ) : (
-                <div className="w-full h-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm">
+                <div className="w-full h-full bg-indigo-600 flex items-center justify-center font-bold text-white text-[10px] md:text-sm shrink-0">
                   {user?.username?.[0]?.toUpperCase() || '?'}
                 </div>
               )}
@@ -731,7 +733,7 @@ const ChatRoom = () => {
 
           {/* BOTTOM NAVY BLUE BAR MATCHING USER SCREENSHOT */}
           <div 
-            className="hidden md:flex items-center justify-between"
+            className="flex items-center justify-between"
             style={{ 
               background: 'var(--bg-panel)', 
               height: '46px', 

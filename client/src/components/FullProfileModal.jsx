@@ -1025,7 +1025,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
           )}
           
           {/* Top Icons Row */}
-          <div className="w-full flex justify-between items-start mb-2 z-10">
+          <div className="w-full flex justify-between items-start mb-2 z-10" onClick={(e) => e.stopPropagation()}>
             <div className="flex gap-2">
               <div className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 transition rounded-full px-2.5 py-1 cursor-default">
                 <FaStar className="text-yellow-400" size={14} />
@@ -1305,7 +1305,7 @@ const FullProfileModal = ({ username, onClose, onPrivate }) => {
                   <p className="text-gray-500 font-medium">There is currently no data to show</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-4 gap-4 px-6 pt-4">
+                <div className="grid grid-cols-3 min-[390px]:grid-cols-4 gap-3 sm:gap-4 px-6 pt-4">
                   {friends.map(friend => (
                     <div key={friend._id} className="flex flex-col items-center cursor-pointer hover:opacity-80 transition">
                       <img 
@@ -1800,8 +1800,8 @@ const giftModalSubtitleStyle = {
 
 const giftGridStyle = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(4, 1fr)',
-  gap: '12px',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(68px, 1fr))',
+  gap: '10px',
   marginTop: '16px',
   marginBottom: '20px',
 };
@@ -1824,7 +1824,7 @@ const giftGridItemStyle = (hasEnough) => ({
 });
 
 const giftGridIconStyle = {
-  fontSize: '2.5rem',
+  fontSize: '2rem',
   display: 'block',
   filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.08))',
   marginBottom: '6px',

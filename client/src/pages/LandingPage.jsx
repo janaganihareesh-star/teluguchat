@@ -61,25 +61,35 @@ const LandingPage = () => {
       <div style={{ position: 'absolute', bottom: '20%', right: '-150px', width: '450px', height: '450px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '50%', filter: 'blur(100px)', zIndex: 0, pointerEvents: 'none' }} />
       
       {/* Top Navbar */}
-      <nav style={{ background: C.NAV_BG, backdropFilter: 'blur(16px)', borderBottom: `1px solid ${C.CARD_BORDER}`, padding: isMobile ? '0 12px' : '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Logo size={40} showText={true} />
+      <nav style={{ background: C.NAV_BG, backdropFilter: 'blur(16px)', borderBottom: `1px solid ${C.CARD_BORDER}`, padding: isMobile ? '0 8px' : '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px', flexShrink: 0 }}>
+          <Logo size={isMobile ? 32 : 40} showText={true} />
           {!isMobile && (
             <span style={{ background: 'rgba(245,158,11,0.12)', border: `1px solid ${C.GOLD}`, color: C.GOLD, padding: '3px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold', marginLeft: '6px' }}>OFFICIAL</span>
           )}
         </div>
 
         {/* Dynamic presence counter and action buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {!isMobile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(16,185,129,0.12)', border: `1px solid rgba(16,185,129,0.3)`, padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', color: C.EMERALD, fontWeight: 'bold' }}>
-              <span style={{ display: 'inline-block', width: '8px', height: '8px', background: C.EMERALD, borderRadius: '50%', boxShadow: `0 0 8px ${C.EMERALD}`, animation: 'pulse 2s infinite' }} />
-              {stats.onlineUsers || 0} Online
-            </div>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '16px', flexShrink: 0 }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: isMobile ? '4px' : '6px', 
+            background: 'rgba(16,185,129,0.12)', 
+            border: `1px solid rgba(16,185,129,0.25)`, 
+            padding: isMobile ? '4px 8px' : '5px 12px', 
+            borderRadius: '20px', 
+            fontSize: isMobile ? '0.7rem' : '0.8rem', 
+            color: C.EMERALD, 
+            fontWeight: 'bold',
+            flexShrink: 0
+          }}>
+            <span style={{ display: 'inline-block', width: isMobile ? '6px' : '8px', height: isMobile ? '6px' : '8px', background: C.EMERALD, borderRadius: '50%', boxShadow: `0 0 8px ${C.EMERALD}`, animation: 'pulse 2s infinite' }} />
+            {stats.onlineUsers || 0} {isMobile ? 'On' : 'Online'}
+          </div>
           
-          <button onClick={() => navigate('/auth')} style={{ background: `linear-gradient(135deg, ${C.GOLD}, #d97706)`, color: '#111827', border: 'none', borderRadius: '10px', padding: '8px 18px', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', boxShadow: `0 4px 14px rgba(245,158,11,0.3)` }}>
-            Start Chatting
+          <button onClick={() => navigate('/auth')} style={{ background: `linear-gradient(135deg, ${C.GOLD}, #d97706)`, color: '#111827', border: 'none', borderRadius: '10px', padding: isMobile ? '6px 12px' : '8px 18px', fontSize: isMobile ? '0.75rem' : '0.85rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', boxShadow: `0 4px 14px rgba(245,158,11,0.3)`, flexShrink: 0 }}>
+            {isMobile ? 'Chat' : 'Start Chatting'}
           </button>
         </div>
       </nav>

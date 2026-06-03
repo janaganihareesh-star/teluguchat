@@ -20,17 +20,18 @@ const Logo = ({ size = 36, showText = true, header = false }) => (
       </defs>
     </svg>
     {showText && (
-      <div style={{ lineHeight: 1.1 }}>
+      <div style={{ lineHeight: 1.1 }} className="flex items-center">
         <span 
+          className="font-black text-xs sm:text-lg"
           style={
             header 
-              ? { fontWeight: '900', fontSize: '1.1rem', color: '#ffffff' }
-              : { fontWeight: '900', fontSize: '1.1rem', background: 'linear-gradient(90deg, #4f46e5, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }
+              ? { color: '#ffffff' }
+              : { background: 'linear-gradient(90deg, #4f46e5, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }
           }
         >
           తెలుగు
         </span>
-        <span style={{ fontWeight: '700', fontSize: '1.1rem', color: '#f59e0b' }}>Chat</span>
+        <span className="font-bold text-xs sm:text-lg text-amber-500">Chat</span>
       </div>
     )}
   </div>
