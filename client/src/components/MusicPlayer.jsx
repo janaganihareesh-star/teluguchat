@@ -121,7 +121,7 @@ const MusicPlayer = () => {
       {track.url && (
         <audio
           ref={audioRef}
-          src={track.url.startsWith('http') ? track.url : `http://localhost:3500${track.url}`}
+          src={track.url.startsWith('http') ? track.url : `${import.meta.env.VITE_API_URL || 'http://localhost:3500'}${track.url}`}
           onTimeUpdate={handleTimeUpdate}
           onCanPlay={() => console.log(`[MusicPlayer] Audio loaded successfully: ${track.title}`)}
           onEnded={handleEnded}

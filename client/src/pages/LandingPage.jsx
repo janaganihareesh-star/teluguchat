@@ -127,9 +127,9 @@ const LandingPage = () => {
             { i: '⚡', t: 'Real-Time Messaging', d: 'Zero-latency WebSocket messaging with instant typing glows, pulsing active indicators, and offline reconnection.' },
             { i: '🏆', t: 'XP & Leveling System', d: 'Earn experience points for each message sent, level up your profile, and climb the public Telugu leaderboard!' },
             { i: '🛡️', t: 'Perspective AI Protection', d: 'Advanced AI and live administrators automatically mute, disconnect, or ban accounts posting spam or abuse.' },
-            
             { i: '📩', t: 'Private Inbox (DMs)', d: 'Connect directly with individual users in secure private conversations with real-time dynamic delivery status.' },
-            { i: '🎤', t: 'Voice & Media Options', d: 'Share audio notes, custom Telugu stickers, GIFs, photos, and fully responsive media uploads instantly.' }
+            { i: '🎤', t: 'Voice & Media Options', d: 'Share audio notes, custom Telugu stickers, GIFs, photos, and fully responsive media uploads instantly.' },
+            { i: '🎵', t: 'Built-in Music Player', d: 'Listen to your favorite Telugu songs while chatting! Streams directly from Google Drive without interrupting your chat experience.' }
           ].map((feat, idx) => (
             <div key={idx} style={{ background: C.CARD_BG, border: `1px solid ${C.CARD_BORDER}`, borderRadius: '20px', padding: '28px', transition: 'all 0.3s', backdropFilter: 'blur(8px)' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', marginBottom: '20px', border: '1px solid rgba(99,102,241,0.25)' }}>

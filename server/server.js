@@ -1,4 +1,4 @@
-// Nodemon restart trigger
+// Nodemon restart trigger (Gemini update v3)
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -158,7 +158,7 @@ app.get('/api/music', async (req, res) => {
       
       return {
         title: cleanTitle,
-        url: `https://drive.google.com/uc?export=download&id=${file.id}`
+        url: `/api/music/stream/${file.id}`
       };
     });
     
@@ -167,6 +167,62 @@ app.get('/api/music', async (req, res) => {
   } catch (error) {
     console.error('[Music API] Error fetching from Google Drive:', error.response?.data || error.message);
     res.status(500).json({ message: 'Error fetching music playlist' });
+  }
+});
+
+app.get('/api/music/stream/:id', async (req, res) => {
+  try {
+    const fileId = req.params.id;
+    const API_KEY = process.env.GOOGLE_DRIVE_API_KEY;
+
+    if (!API_KEY) {
+      console.error('[Music Stream] Google Drive API Key is missing.');
+      return res.status(500).json({ message: 'Drive configuration missing' });
+    }
+
+    const driveUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`;
+    
+    const headers = {};
+    if (req.headers.range) {
+      headers['Range'] = req.headers.range;
+    }
+
+    const response = await axios({
+      method: 'get',
+      url: driveUrl,
+      headers: headers,
+      responseType: 'stream'
+    });
+
+    res.status(response.status);
+
+    const headersToForward = [
+      'content-type',
+      'content-length',
+      'content-range',
+      'accept-ranges'
+    ];
+
+    headersToForward.forEach(header => {
+      if (response.headers[header]) {
+        res.setHeader(header, response.headers[header]);
+      }
+    });
+
+    if (!res.getHeader('Content-Type')) {
+      res.setHeader('Content-Type', 'audio/mpeg');
+    }
+    if (!res.getHeader('Accept-Ranges')) {
+      res.setHeader('Accept-Ranges', 'bytes');
+    }
+
+    response.data.pipe(res);
+
+  } catch (error) {
+    console.error('[Music Stream] Error streaming from Google Drive:', error.response?.data || error.message);
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Error streaming audio' });
+    }
   }
 });
 
