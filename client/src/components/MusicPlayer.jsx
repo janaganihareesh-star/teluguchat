@@ -23,6 +23,10 @@ const MusicPlayer = () => {
   useEffect(() => {
     if (!isDragging) return;
 
+    // Prevent selecting text on the page during drag
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+
     const onMove = (e) => {
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -68,6 +72,8 @@ const MusicPlayer = () => {
     window.addEventListener('touchend', onEnd);
 
     return () => {
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onEnd);
       window.removeEventListener('touchmove', onMove);
@@ -164,6 +170,11 @@ const MusicPlayer = () => {
     // Only drag with left mouse click or touch
     if (e.button !== undefined && e.button !== 0) return;
     
+    // Prevent default browser behavior (like text selection and copying highlights)
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+    
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     
@@ -198,6 +209,10 @@ const MusicPlayer = () => {
           touchAction: 'none',
           transform: `translate3d(${bubblePos.x}px, ${bubblePos.y}px, 0)`,
           transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)', // Snappy spring-like release!
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          MozUserSelect: 'none',
+          msUserSelect: 'none',
         }}
         title={`Now Playing: ${track.title}`}
         className="active:scale-95 group"
