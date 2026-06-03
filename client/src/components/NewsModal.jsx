@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaThumbsUp, FaThumbsDown, FaHeart, FaLaughSquint, FaComment, FaCheckCircle, FaSpinner } from 'react-icons/fa';
-import axios from 'axios';
+import api from '../services/api';
 
 const NewsModal = ({ onClose }) => {
   const [newsItems, setNewsItems] = useState([]);
@@ -20,9 +20,7 @@ const NewsModal = ({ onClose }) => {
       try {
         const token = localStorage.getItem('token');
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        // BaseURL inference (assumes proxy or standard env)
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3500/api';
-        const res = await axios.get(`${baseUrl}/news`, config);
+        const res = await api.get('/api/news', config);
         setNewsItems(res.data);
         
         // Initialize reactions for fetched items
@@ -77,11 +75,11 @@ const NewsModal = ({ onClose }) => {
     setSendingReply(true);
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3500/api';
-      const res = await axios.post(
-        `${baseUrl}/news/${postId}/reply`,
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const res = await api.post(
+        `/api/news/${postId}/reply`,
         { text },
-        { headers: { Authorization: `Bearer ${token}` } }
+        config
       );
       
       // Update the specific news item with the newly returned one (which has populated replies)

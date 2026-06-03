@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaPlay, FaPause, FaStepForward, FaStepBackward, FaVolumeMute, FaVolumeUp, FaMusic, FaMinus } from 'react-icons/fa';
 import axios from 'axios';
 import api from '../services/api';
+import { motion } from 'framer-motion';
 
 const MusicPlayer = () => {
   const [playlist, setPlaylist] = useState([]);
@@ -11,7 +12,68 @@ const MusicPlayer = () => {
   const [isMinimized, setIsMinimized] = useState(true);
   const [progress, setProgress] = useState(0);
   
+  const [bubblePos, setBubblePos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  
+  const dragStart = useRef({ x: 0, y: 0 });
+  const dragOffsetStart = useRef({ x: 0, y: 0 });
   const audioRef = useRef(null);
+
+  // Vanilla Drag Listeners
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const onMove = (e) => {
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      
+      const deltaX = clientX - dragStart.current.x;
+      const deltaY = clientY - dragStart.current.y;
+      
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      
+      // Bounding constraints so bubble stays on screen
+      const newX = Math.max(-w + 76, Math.min(20, dragOffsetStart.current.x + deltaX));
+      const newY = Math.max(-h + 146, Math.min(90, dragOffsetStart.current.y + deltaY));
+      
+      setBubblePos({ x: newX, y: newY });
+    };
+
+    const onEnd = (e) => {
+      setIsDragging(false);
+      
+      let endX, endY;
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        endX = e.changedTouches[0].clientX;
+        endY = e.changedTouches[0].clientY;
+      } else {
+        endX = e.clientX;
+        endY = e.clientY;
+      }
+      
+      const startX = dragStart.current.x;
+      const startY = dragStart.current.y;
+      const distance = Math.sqrt(Math.pow((endX || startX) - startX, 2) + Math.pow((endY || startY) - startY, 2));
+      
+      // If movement is very small, it's a tap/click -> maximize player
+      if (distance < 6) {
+        setIsMinimized(false);
+      }
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+    window.addEventListener('touchmove', onMove, { passive: true });
+    window.addEventListener('touchend', onEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onEnd);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onEnd);
+    };
+  }, [isDragging]);
 
   // Fetch playlist from the backend
   useEffect(() => {
@@ -98,6 +160,128 @@ const MusicPlayer = () => {
     setIsMuted(!isMuted);
   };
 
+  const handleStart = (e) => {
+    // Only drag with left mouse click or touch
+    if (e.button !== undefined && e.button !== 0) return;
+    
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    dragStart.current = { x: clientX, y: clientY };
+    dragOffsetStart.current = { ...bubblePos };
+    setIsDragging(true);
+  };
+
+  if (isMinimized) {
+    return (
+      <div 
+        onMouseDown={handleStart}
+        onTouchStart={handleStart}
+        style={{
+          position: 'fixed',
+          bottom: '90px',
+          right: '20px',
+          zIndex: 1000,
+          background: 'rgba(15, 23, 42, 0.9)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          borderRadius: '50%',
+          width: '56px',
+          height: '56px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+          color: '#fff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          fontFamily: 'sans-serif',
+          touchAction: 'none',
+          transform: `translate3d(${bubblePos.x}px, ${bubblePos.y}px, 0)`,
+          transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)', // Snappy spring-like release!
+        }}
+        title={`Now Playing: ${track.title}`}
+        className="active:scale-95 group"
+      >
+        {/* Hidden Native Audio Element (keeps playing in background) */}
+        {track.url && (
+          <audio
+            ref={audioRef}
+            src={track.url.startsWith('http') ? track.url : `${import.meta.env.VITE_API_URL || 'http://localhost:3500'}${track.url}`}
+            onTimeUpdate={handleTimeUpdate}
+            onEnded={handleEnded}
+            onError={(e) => {
+              console.error(`[MusicPlayer] Error playing audio for: ${track.title}`, e);
+              if (playlist.length > 1) handleNext();
+            }}
+          />
+        )}
+
+        <div 
+          className="transition-transform duration-200 group-hover:scale-110"
+          style={{ position: 'relative', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}
+        >
+          {/* Rotating Vinyl Record/CD Icon */}
+          <svg 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            style={{
+              width: '32px',
+              height: '32px',
+              animation: isPlaying ? 'spin 3s linear infinite' : 'none',
+              transition: 'transform 0.5s ease',
+            }}
+          >
+            <circle cx="12" cy="12" r="10" fill="#1e293b" stroke="#f59e0b" strokeWidth="1.5" />
+            <circle cx="12" cy="12" r="7" fill="#0f172a" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+            <circle cx="12" cy="12" r="4" fill="#334155" />
+            <circle cx="12" cy="12" r="1.5" fill="#f59e0b" />
+          </svg>
+          {/* Tiny floating music note when playing */}
+          {isPlaying && (
+            <span style={{
+              position: 'absolute',
+              top: '-4px',
+              right: '-4px',
+              fontSize: '0.75rem',
+              animation: 'pulse 1.5s infinite',
+              color: '#f59e0b',
+            }}>
+              🎵
+            </span>
+          )}
+        </div>
+
+        {/* Floating Animated Equalizer overlay when playing */}
+        {isPlaying && (
+          <div style={{
+            position: 'absolute',
+            bottom: '6px',
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: '2px',
+            height: '10px',
+            pointerEvents: 'none'
+          }}>
+            <div style={{ width: '2.5px', height: '100%', background: '#f59e0b', borderRadius: '1px', animation: 'eq-bounce 0.8s ease-in-out infinite alternate' }} />
+            <div style={{ width: '2.5px', height: '100%', background: '#f59e0b', borderRadius: '1px', animation: 'eq-bounce 0.5s ease-in-out infinite alternate', animationDelay: '0.15s' }} />
+            <div style={{ width: '2.5px', height: '100%', background: '#f59e0b', borderRadius: '1px', animation: 'eq-bounce 0.7s ease-in-out infinite alternate', animationDelay: '0.3s' }} />
+          </div>
+        )}
+
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          @keyframes eq-bounce {
+            0% { height: 3px; }
+            100% { height: 10px; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       position: 'fixed',
@@ -115,7 +299,6 @@ const MusicPlayer = () => {
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       fontFamily: 'sans-serif',
       overflow: 'hidden',
-      display: isMinimized ? 'none' : 'block'
     }}>
       {/* Hidden Native Audio Element */}
       {track.url && (
@@ -139,10 +322,63 @@ const MusicPlayer = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
             <FaMusic style={{ color: '#f59e0b' }} />
             <span style={{ fontSize: '0.82rem', fontWeight: 'bold', letterSpacing: '0.05em', color: '#94a3b8', textTransform: 'uppercase' }}>Telugu FM</span>
+            
+            {/* Small Equalizer in Header when playing */}
+            {isPlaying && (
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1.5px', height: '8px', marginLeft: '6px' }}>
+                <div style={{ width: '1.5px', height: '100%', background: '#f59e0b', borderRadius: '1px', animation: 'eq-bounce 0.8s ease-in-out infinite alternate' }} />
+                <div style={{ width: '1.5px', height: '100%', background: '#f59e0b', borderRadius: '1px', animation: 'eq-bounce 0.5s ease-in-out infinite alternate', animationDelay: '0.15s' }} />
+                <div style={{ width: '1.5px', height: '100%', background: '#f59e0b', borderRadius: '1px', animation: 'eq-bounce 0.7s ease-in-out infinite alternate', animationDelay: '0.3s' }} />
+              </div>
+            )}
           </div>
           <button onClick={() => setIsMinimized(true)} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#94a3b8' }}>
             <FaMinus size={10} />
           </button>
+        </div>
+
+        {/* Rotating Vinyl Record Artwork in full view */}
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '14px 0 16px 0' }}>
+          <div style={{
+            width: '76px',
+            height: '76px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, #334155 0%, #0f172a 70%, #1e293b 100%)',
+            border: '2px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 8px 16px rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            animation: isPlaying ? 'spin 8s linear infinite' : 'none'
+          }}>
+            {/* Vinyl grooves */}
+            <div style={{ position: 'absolute', width: '60px', height: '60px', borderRadius: '50%', border: '1px dashed rgba(255,255,255,0.05)' }} />
+            <div style={{ position: 'absolute', width: '44px', height: '44px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.05)' }} />
+            
+            {/* Center yellow label */}
+            <div style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              background: '#f59e0b',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: 'inset 0 0 5px rgba(0,0,0,0.5)'
+            }}>
+              <FaMusic size={9} style={{ color: '#0f172a' }} />
+            </div>
+            
+            {/* Hole */}
+            <div style={{
+              position: 'absolute',
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: 'rgba(15, 23, 42, 0.95)'
+            }} />
+          </div>
         </div>
 
         {/* Track Info */}
@@ -185,8 +421,8 @@ const MusicPlayer = () => {
           to { transform: rotate(360deg); }
         }
         @keyframes eq-bounce {
-          0%, 100% { height: 4px; }
-          50% { height: 12px; }
+          0% { height: 2px; }
+          100% { height: 8px; }
         }
       `}</style>
     </div>

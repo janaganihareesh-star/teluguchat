@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
+import api from '../services/api';
 
 const C = {
   GRADIENT: 'linear-gradient(135deg, #08071a 0%, #120e2e 50%, #080516 100%)',
@@ -17,12 +18,19 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ totalUsers: 0, onlineUsers: 0 });
   const [activeFaq, setActiveFaq] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchStats = () => {
-      fetch('http://localhost:3500/api/stats')
-        .then(r => r.json())
-        .then(data => {
+      api.get('/api/stats')
+        .then(res => {
+          const data = res.data;
           if (data && typeof data.totalUsers === 'number') {
             setStats(data);
           }
@@ -53,18 +61,22 @@ const LandingPage = () => {
       <div style={{ position: 'absolute', bottom: '20%', right: '-150px', width: '450px', height: '450px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '50%', filter: 'blur(100px)', zIndex: 0, pointerEvents: 'none' }} />
       
       {/* Top Navbar */}
-      <nav style={{ background: C.NAV_BG, backdropFilter: 'blur(16px)', borderBottom: `1px solid ${C.CARD_BORDER}`, padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
+      <nav style={{ background: C.NAV_BG, backdropFilter: 'blur(16px)', borderBottom: `1px solid ${C.CARD_BORDER}`, padding: isMobile ? '0 12px' : '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Logo size={40} showText={true} />
-          <span style={{ background: 'rgba(245,158,11,0.12)', border: `1px solid ${C.GOLD}`, color: C.GOLD, padding: '3px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold', marginLeft: '6px' }}>OFFICIAL</span>
+          {!isMobile && (
+            <span style={{ background: 'rgba(245,158,11,0.12)', border: `1px solid ${C.GOLD}`, color: C.GOLD, padding: '3px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold', marginLeft: '6px' }}>OFFICIAL</span>
+          )}
         </div>
 
         {/* Dynamic presence counter and action buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(16,185,129,0.12)', border: `1px solid rgba(16,185,129,0.3)`, padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', color: C.EMERALD, fontWeight: 'bold' }}>
-            <span style={{ display: 'inline-block', width: '8px', height: '8px', background: C.EMERALD, borderRadius: '50%', boxShadow: `0 0 8px ${C.EMERALD}`, animation: 'pulse 2s infinite' }} />
-            {stats.onlineUsers || 0} Online
-          </div>
+          {!isMobile && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(16,185,129,0.12)', border: `1px solid rgba(16,185,129,0.3)`, padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', color: C.EMERALD, fontWeight: 'bold' }}>
+              <span style={{ display: 'inline-block', width: '8px', height: '8px', background: C.EMERALD, borderRadius: '50%', boxShadow: `0 0 8px ${C.EMERALD}`, animation: 'pulse 2s infinite' }} />
+              {stats.onlineUsers || 0} Online
+            </div>
+          )}
           
           <button onClick={() => navigate('/auth')} style={{ background: `linear-gradient(135deg, ${C.GOLD}, #d97706)`, color: '#111827', border: 'none', borderRadius: '10px', padding: '8px 18px', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', boxShadow: `0 4px 14px rgba(245,158,11,0.3)` }}>
             Start Chatting
@@ -73,7 +85,7 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <header style={{ position: 'relative', zIndex: 1, padding: '80px 20px', textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
+      <header style={{ position: 'relative', zIndex: 1, padding: isMobile ? '40px 16px' : '80px 20px', textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(99,102,241,0.15)', border: `1px solid rgba(99,102,241,0.3)`, borderRadius: '30px', padding: '6px 16px', fontSize: '0.82rem', color: '#a5b4fc', fontWeight: 'bold', marginBottom: '24px' }}>
           ✨ Real-Time Telugu Messaging & Voice Rooms
         </div>
@@ -91,13 +103,15 @@ const LandingPage = () => {
 
         {/* Glowing Action Buttons */}
         <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={() => navigate('/auth')} style={{ background: `linear-gradient(135deg, ${C.GOLD}, #d97706)`, color: '#111827', border: 'none', borderRadius: '50px', padding: '16px 40px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: `0 10px 30px rgba(245,158,11,0.35)`, transition: 'all 0.2s' }}>
+          <button onClick={() => navigate('/auth')} style={{ background: `linear-gradient(135deg, ${C.GOLD}, #d97706)`, color: '#111827', border: 'none', borderRadius: '50px', padding: '16px 40px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: `0 10px 30px rgba(245,158,11,0.35)`, transition: 'all 0.2s', width: isMobile ? '85%' : 'auto' }}>
             🚀 Enter The Chat
           </button>
           
-          <button onClick={() => navigate('/auth')} style={{ background: 'rgba(255,255,255,0.06)', color: '#f8fafc', border: `1px solid ${C.CARD_BORDER}`, borderRadius: '50px', padding: '16px 40px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(8px)' }}>
-            ⚡ Start The Chat
-          </button>
+          {!isMobile && (
+            <button onClick={() => navigate('/auth')} style={{ background: 'rgba(255,255,255,0.06)', color: '#f8fafc', border: `1px solid ${C.CARD_BORDER}`, borderRadius: '50px', padding: '16px 40px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(8px)' }}>
+              ⚡ Start The Chat
+            </button>
+          )}
         </div>
       </header>
 

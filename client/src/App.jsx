@@ -55,7 +55,7 @@ function App() {
               <NotificationProvider>
                 <ChatProvider>
                   <InboxProvider>
-                    <div className="min-h-[100dvh] bg-gray-900 font-sans transition-colors duration-300 relative pb-16 md:pb-0">
+                    <div className="min-h-[100dvh] bg-gray-900 font-sans transition-colors duration-300 relative">
                       <Routes>
                         <Route path="/" element={<LandingPage />} />
                         <Route path="/auth" element={<AuthSelection />} />
@@ -72,7 +72,6 @@ function App() {
                         
                         <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
                       </Routes>
-                      <MobileNav />
                       <MusicPlayer />
                       <CookieBanner />
                     </div>

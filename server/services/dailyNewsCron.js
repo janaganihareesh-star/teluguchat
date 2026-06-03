@@ -7,70 +7,36 @@ const initDailyNewsCron = (app) => {
   
   const generateFallbackNews = async () => {
     const fallbackQuotes = [
-      "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+      "Success anedi final kadhu, failure anedi fatal kadhu: continue ayye dhairyame important!",
       "Ninnati kante eroju inka better ga undalani korukuntunnam!",
-      "Believe you can and you're halfway there.",
-      "Your only limit is your mind. Think big!",
-      "Every day is a fresh start. Make the most of your conversations today!",
-      "Small steps every day lead to big results. Keep pushing forward!",
-      "ప్రతి నిమిషం ఒక కొత్త అవకాశం. దాన్ని వదులుకోకండి!",
-      "కష్టపడకుండా లభించే విజయం కంటే, పోరాడి గెలిచే విజయానికి విలువ ఎక్కువ.",
-      "మీ ఆలోచనలే మీ భవిష్యత్తును నిర్ణయిస్తాయి.",
-      "ఓటమి అనేది విజయానికి మొదటి మెట్టు.",
-      "The best way to predict the future is to create it.",
-      "Don't watch the clock; do what it does. Keep going.",
-      "నీ శ్రమ నిన్ను ఎప్పటికైనా ఉన్నత స్థానంలో నిలబెడుతుంది.",
-      "Act as if what you do makes a difference. It does.",
-      "కలలు కనండి, వాటిని నిజం చేసుకోవడానికి నిరంతరం శ్రమించండి.",
-      "Opportunities don't happen, you create them.",
-      "It always seems impossible until it's done.",
-      "విజయం అనేది ఒక ప్రయాణం, గమ్యస్థానం కాదు.",
-      "The only way to do great work is to love what you do.",
-      "Start where you are. Use what you have. Do what you can.",
-      "కష్టాలు మనల్ని బలహీనపరచడానికి రావు, మనలోని శక్తినే మేల్కొల్పడానికి వస్తాయి.",
-      "Strive not to be a success, but rather to be of value.",
-      "నీపై నీకు నమ్మకం ఉంటే, సగం విజయం సాధించినట్లే.",
-      "Do one thing every day that scares you.",
-      "Quality is not an act, it is a habit.",
-      "మనం నిన్నటి కంటే ఈరోజు మరింత మెరుగ్గా మారాలి.",
-      "Hardships often prepare ordinary people for an extraordinary destiny.",
-      "Success usually comes to those who are too busy to be looking for it.",
-      "ధైర్యమే మనకున్న అతిపెద్ద ఆయుధం.",
-      "Dream big and dare to fail."
+      "Mee meedha meeku confidence unte, half success energy vachinatle.",
+      "Mee constructive thoughts ye mee future ni decide chesthayi.",
+      "Dream big, and avi nijam cheskovadaniki regular ga work cheyandi.",
+      "Prathi minute oka kotha chance. Danni miss cheskokandi!",
+      "Failure anedi success ki first step.",
+      "Mee hard work mimmalni eppatikaina high position lo nilabeduthundi.",
+      "Success anedi oka journey, destination kaadhu.",
+      "Kashtalu mana weak spots ni chupiyadaniki raavu, mana power ni baytaki thiyadaniki vasthayi.",
+      "Ninnati kante eroju inka better ga marali mana life lo.",
+      "Dhairyam ye mana life lo big weapon."
     ];
 
     const fallbackQuestions = [
-      "If you could travel anywhere right now, where would it be?",
-      "What is your favorite childhood memory?",
-      "If you had to eat only one food for the rest of your life, what would it be?",
-      "What is a skill you'd love to learn this year?",
-      "Eroju mee life lo jarigina oka manchi vishayam enti?",
-      "Mee favourite movie enti? Enduku ishtam?",
-      "మీరు చూసిన వాటిలో అత్యంత అందమైన ప్రదేశం ఏది?",
-      "మీకు బాగా నచ్చిన పుస్తకం లేదా సినిమా ఏది మరియు ఎందుకు?",
-      "మీ జీవితంలో మీరు అత్యంత గౌరవించే వ్యక్తి ఎవరు?",
-      "If you could meet any historical person, who would it be?",
-      "మీ చిన్ననాటి స్నేహితులతో మీకున్న బెస్ట్ మెమరీ ఏంటి?",
-      "What is the best piece of advice you have ever received?",
-      "మీకు సూపర్ పవర్ ఉంటే ఏం చేయాలనుకుంటారు?",
-      "What is your favorite way to spend a rainy day?",
-      "ఈరోజు మీ మూడ్ ఎలా ఉంది? ఒక ఎమోజీతో చెప్పండి!",
-      "What is one thing you are grateful for today?",
-      "If you could change one thing in the world, what would it be?",
-      "మీకు నచ్చిన తెలుగు వంటకం ఏది?",
-      "What is your dream job?",
-      "If you could live in any era of history, which one would you choose?",
-      "మీ ఖాళీ సమయంలో మీరు ఎక్కువగా చేసే పని ఏంటి?",
-      "What is your favorite childhood cartoon show?",
-      "మీ జీవితంలో మర్చిపోలేని ప్రయాణం ఏది?",
-      "If you could learn any language instantly, what would it be?",
-      "మీరు ఎక్కువగా వినే పాట ఏది?",
-      "What is the most adventurous thing you have ever done?",
-      "మీ ఫేవరెట్ క్రికెటర్ లేదా క్రీడాకారుడు ఎవరు?",
-      "If you could open a business, what kind of business would it be?",
-      "మీకు సంతోషాన్ని ఇచ్చే చిన్న విషయం ఏంటి?",
-      "What is the next goal you want to achieve?"
+      "Mee life lo choosina dynamic and beautiful place edi?",
+      "Meeku baga nachina book or movie enti and character enduku nachindi?",
+      "Mee life lo meeru respect chese first person evaru?",
+      "Mee childhood friends tho unna best memory organic details cheppandi?",
+      "Meeku super power unte em cheyali anukuntunnaru?",
+      "Eroju mee mood ela undi? Oka emoji tho match cheyandi!",
+      "Meeku nachina comfort food / Telugu dish edi?",
+      "Mee free time lo ekkuva em cheyadam ishtam?",
+      "Mee life lo life-changing/memorable travel memories cheppandi?",
+      "Meeku loop lo vine favourite song/track enti eroju?",
+      "Mee favourite cricketer or sports player evaru?",
+      "Meeku happy ga anipinche tiny thing enti daily life lo?"
     ];
+
+
 
     const fallbackSongs = [
       "Idi vinu baguntadi: 'Samajavaragamana' from Ala Vaikunthapurramuloo 🎵",
@@ -186,6 +152,14 @@ If it is NOT a major special day (just a regular day), generate exactly these 3 
 3. A Telugu or Indian Song Suggestion
 Combine all 3 nicely into the 'content' field using HTML formatting (e.g., <br> or <strong>). Do NOT add extra chit-chat.
 - Set 'type' to "motivation".
+
+CRITICAL LANGUAGE REQUIREMENT:
+The response ("title" and "content") MUST be written in a friendly, conversational mix of Telugu and English (code-mixed "Tanglish" / "Telugu-English" chat style) using ONLY the English/Latin alphabet (do NOT use Telugu script/Telugu letters).
+Write it exactly how young Telugu people chat online or talk to friends. E.g.:
+- "Success anedi final kadhu, failure anedi fatal kadhu: continue ayye dhairyame important!"
+- "Eroju question of the day: Mee childhood friends tho unna best memory organic details cheppandi?"
+- "Ee song vinu, chaala melodious ga transition baguntadi: 'Samajavaragamana' from Ala Vaikunthapurramuloo 🎵"
+- "Happy Diwali friends! Eroju mana family tho sweets తింటూ safely crackers kalchandi!"
 
 The response MUST be a valid JSON object matching this schema exactly, and NO markdown wrapping or backticks around it:
 {

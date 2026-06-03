@@ -398,6 +398,15 @@ const ChatRoom = () => {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Online Users Toggle (Mobile only) */}
+          <button 
+            onClick={() => setShowOnlineSidebar(!showOnlineSidebar)}
+            className="p-2 hover:opacity-80 rounded-lg transition flex md:hidden items-center justify-center text-lg"
+            style={{ color: 'var(--text-main)' }}
+            title="Toggle Online Users"
+          >
+            👥
+          </button>
           <button 
             onClick={() => window.location.reload()} 
             title="Refresh Page" 
@@ -429,46 +438,50 @@ const ChatRoom = () => {
             </button>
 
             {showInboxDropdown && (
-              <div 
-                className="absolute right-0 mt-2 w-80 bg-white border border-slate-200/80 rounded-2xl shadow-xl z-50 overflow-hidden text-slate-800"
-                style={{ filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))' }}
-              >
-                {/* Header */}
-                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                  <h3 className="font-extrabold text-slate-800 text-sm">Private</h3>
-                  <div className="flex items-center gap-3 text-slate-500">
-                    <button 
-                      onClick={handleMarkAllInboxRead} 
-                      className="hover:text-indigo-600 transition flex items-center justify-center cursor-pointer"
-                      title="Mark all as read"
-                    >
-                      <FaCheckSquare size={16} />
-                    </button>
-                    <button 
-                      onClick={handleClearAllInbox} 
-                      className="hover:text-red-500 transition flex items-center justify-center cursor-pointer"
-                      title="Delete all conversations"
-                    >
-                      <FaTrashAlt size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Body */}
-                <div className="max-h-96 overflow-y-auto">
-                  {conversations.length === 0 ? (
-                    <div className="p-6 flex flex-col items-center justify-center text-center">
-                      <svg width="80" height="80" viewBox="0 0 80 80" fill="none" className="mb-3">
-                        <path 
-                          d="M40 18C27.85 18 18 27.85 18 40C18 52.15 27.85 62 40 62C52.15 62 62 52.15 62 40C62 33.5 59.2 27.65 54.8 23.6C56 21 58 18 58 18C58 18 52 21 49.2 22.8C46.35 19.7 42.9 18 40 18Z" 
-                          fill="#cbd5e1" 
-                        />
-                        <circle cx="33" cy="40" r="3.5" fill="white" />
-                        <circle cx="47" cy="40" r="3.5" fill="white" />
-                        <path d="M35 49C35 49 37 46 40 46C43 46 45 49 45 49" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                      </svg>
-                      <div className="text-xs text-slate-400 font-semibold">Your private chat list is empty</div>
+              <>
+                {/* Backdrop to close when clicking outside */}
+                <div 
+                  onClick={() => setShowInboxDropdown(false)} 
+                  className="fixed inset-0 z-40 bg-black/45 md:bg-transparent"
+                />
+                
+                {/* Responsive Inbox Dialog */}
+                <div 
+                  className="fixed inset-x-4 top-20 mx-auto max-w-[340px] md:absolute md:inset-auto md:right-0 md:top-full md:mt-2 md:w-80 bg-white border border-slate-200/80 rounded-2xl shadow-xl z-50 overflow-hidden text-slate-800"
+                  style={{ filter: 'drop-shadow(0 10px 15px rgba(0, 0, 0, 0.15))' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Header */}
+                  <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/85 backdrop-blur-xs">
+                    <h3 className="font-extrabold text-slate-800 text-sm">Private Chats</h3>
+                    <div className="flex items-center gap-3 text-slate-500">
+                      <button 
+                        onClick={handleMarkAllInboxRead} 
+                        className="hover:text-indigo-600 transition flex items-center justify-center cursor-pointer"
+                        title="Mark all as read"
+                      >
+                        <FaCheckSquare size={16} />
+                      </button>
+                      <button 
+                        onClick={handleClearAllInbox} 
+                        className="hover:text-red-500 transition flex items-center justify-center cursor-pointer"
+                        title="Delete all conversations"
+                      >
+                        <FaTrashAlt size={16} />
+                      </button>
                     </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="max-h-96 overflow-y-auto">
+                    {conversations.length === 0 ? (
+                      <div className="p-8 flex flex-col items-center justify-center text-center">
+                        <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center mb-3 text-2xl animate-bounce">
+                          💬
+                        </div>
+                        <div className="text-xs text-slate-600 font-bold">No conversations yet</div>
+                        <div className="text-[10px] text-slate-400 mt-1 max-w-[200px] leading-relaxed">Tap on any user's profile to start a secure private chat!</div>
+                      </div>
                   ) : (
                     conversations.map((conv) => {
                       const otherUser = conv.participants.find(p => p._id !== user?._id);
@@ -504,7 +517,8 @@ const ChatRoom = () => {
                   )}
                 </div>
               </div>
-            )}
+            </>
+          )}
           </div>
           
           
@@ -599,7 +613,8 @@ const ChatRoom = () => {
                     setHasSeenNews(true);
                     localStorage.setItem('hasSeenNews', 'true');
                   }},
-                  { icon: '🏅', label: 'Leaderboards', action: () => setShowLeaderboards(true) }
+                  { icon: '🏅', label: 'Leaderboards', action: () => setShowLeaderboards(true) },
+                  { icon: '🎵', label: 'Music Player', action: () => window.dispatchEvent(new Event('toggle-music-player')) }
                 ].map((item, idx) => (
                   <button key={idx} onClick={() => { item.action(); setShowDrawer(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm font-medium transition relative">
                     <span>{item.icon}</span>
@@ -716,12 +731,10 @@ const ChatRoom = () => {
 
           {/* BOTTOM NAVY BLUE BAR MATCHING USER SCREENSHOT */}
           <div 
+            className="hidden md:flex items-center justify-between"
             style={{ 
               background: 'var(--bg-panel)', 
               height: '46px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between', 
               padding: '0 16px',
               borderTop: '1px solid rgba(255,255,255,0.1)',
               zIndex: 40,
@@ -925,7 +938,7 @@ const ChatRoom = () => {
       {showSounds && <SoundsModal onClose={() => setShowSounds(false)} />}
       {showTheme && <ThemeModal onClose={() => setShowTheme(false)} />}
       {showNews && <NewsModal onClose={() => setShowNews(false)} />}
-      {showLeaderboards && <LeaderboardsModal onClose={() => setShowLeaderboards(false)} token={token} />}
+      {showLeaderboards && <LeaderboardsModal onClose={() => setShowLeaderboards(false)} onSelectUser={(username) => setFullProfileUsername(username)} token={token} />}
 
       {/* MODERATION OVERLAY */}
       {moderationEvent && (
