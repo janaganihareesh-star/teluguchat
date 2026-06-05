@@ -11,7 +11,6 @@ import {
 } from 'react-icons/fa';
 import ImageLightbox from './ImageLightbox';
 
-const NAVY = '#1e3d75';
 
 const FullProfileModal = ({ username, onClose, onPrivate }) => {
   const { token, user: currentUser, updateUser } = useContext(AuthContext);

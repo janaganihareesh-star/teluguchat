@@ -10,7 +10,6 @@ import api from '../services/api';
 const EmojiPicker = lazy(() => import('./EmojiPicker'));
 const StickerPicker = lazy(() => import('./StickerPicker'));
 
-const NAVY = '#1e3d75';
 
 const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, setHasUnread }) => {
   const { user: currentUser, token } = useContext(AuthContext);
@@ -298,10 +297,10 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
           </div>
           <button onClick={onClose} style={headerBtnStyle}><FaTimes /></button>
         </div>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center', background: '#f8fafc' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center', background: 'var(--bg-app)' }}>
           <span style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🔒</span>
-          <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#1e293b' }}>Private Inbox Locked</div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '6px', lineHeight: '1.4' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--text-main)' }}>Private Inbox Locked</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px', lineHeight: '1.4' }}>
             Guests cannot access private chat. Please register to unlock direct messaging!
           </div>
         </div>
@@ -367,15 +366,15 @@ const PrivateChatWindow = ({ targetUser, onClose, isMinimized, setIsMinimized, s
           <button 
             onClick={handleIgnoreToggle} 
             style={settingsOptionStyle}
-            onMouseOver={e => e.currentTarget.style.background = '#f5f5f5'}
+            onMouseOver={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
             onMouseOut={e => e.currentTarget.style.background = 'none'}
           >
             {isIgnored ? 'Unignore User' : 'Ignore User'}
           </button>
           <button 
             onClick={handleReportUser} 
-            style={{ ...settingsOptionStyle, borderTop: '1px solid #f0f0f0', color: '#ff3b30' }}
-            onMouseOver={e => e.currentTarget.style.background = '#fff5f5'}
+            style={{ ...settingsOptionStyle, borderTop: '1px solid var(--border-color)', color: '#ff3b30' }}
+            onMouseOver={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
             onMouseOut={e => e.currentTarget.style.background = 'none'}
           >
             Report User
