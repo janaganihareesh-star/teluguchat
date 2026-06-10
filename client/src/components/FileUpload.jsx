@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import axios from 'axios';
 import { FaPaperclip, FaTimes } from 'react-icons/fa';
 import api from '../services/api';
 

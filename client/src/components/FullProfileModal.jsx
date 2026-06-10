@@ -1578,7 +1578,7 @@ const spinnerStyle = {
 
 const closeBtnBottomStyle = {
   marginTop: '16px',
-  background: NAVY,
+  background: '#1e3d75',
   color: '#fff',
   border: 'none',
   borderRadius: '10px',
