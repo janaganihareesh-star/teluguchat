@@ -51,54 +51,54 @@
 }
 
 .theme-love {
-  --bg-app: #fdf2f8;
-  --bg-panel: rgba(253, 242, 248, 0.85);
-  --text-main: #701a75;
-  --text-muted: #9d174d;
-  --accent: #ec4899;
-  --border-color: rgba(236, 72, 153, 0.2);
+  --bg-app: #DB7081;
+  --bg-panel: rgba(219, 112, 129, 0.85);
+  --text-main: #ffffff;
+  --text-muted: #fdf2f8;
+  --accent: #ffe4e6;
+  --border-color: rgba(255, 255, 255, 0.2);
   --bg-pattern-mobile: url('./assets/themes/love.png') center / contain no-repeat;
   --bg-pattern-desktop: url('./assets/themes/love.png') center / contain no-repeat;
-  --msg-bg: rgba(253, 242, 248, 0.75);
+  --msg-bg: rgba(219, 112, 129, 0.75);
   --msg-backdrop: blur(6px);
 }
 
 .theme-friendship {
-  --bg-app: #fffbeb;
-  --bg-panel: rgba(254, 243, 199, 0.85);
-  --text-main: #431407;
-  --text-muted: #7c2d12;
+  --bg-app: #F4EBE0;
+  --bg-panel: rgba(244, 235, 224, 0.85);
+  --text-main: #78350f;
+  --text-muted: #b45309;
   --accent: #f59e0b;
-  --border-color: rgba(245, 158, 11, 0.25);
+  --border-color: rgba(245, 158, 11, 0.2);
   --bg-pattern-mobile: url('./assets/themes/friendship.png') center / contain no-repeat;
   --bg-pattern-desktop: url('./assets/themes/friendship.png') center / contain no-repeat;
-  --msg-bg: rgba(255, 251, 235, 0.75);
+  --msg-bg: rgba(244, 235, 224, 0.75);
   --msg-backdrop: blur(6px);
 }
 
 .theme-sad {
-  --bg-app: #f8fafc;
-  --bg-panel: rgba(226, 232, 240, 0.85);
-  --text-main: #0f172a;
-  --text-muted: #334155;
-  --accent: #64748b;
-  --border-color: rgba(100, 116, 139, 0.25);
-  --bg-pattern-mobile: url('./assets/themes/sad.png') center / contain no-repeat;
-  --bg-pattern-desktop: url('./assets/themes/sad.png') center / contain no-repeat;
-  --msg-bg: rgba(248, 250, 252, 0.7);
+  --bg-app: #879BC0;
+  --bg-panel: rgba(135, 155, 192, 0.85);
+  --text-main: #ffffff;
+  --text-muted: #e2e8f0;
+  --accent: #cbd5e1;
+  --border-color: rgba(255, 255, 255, 0.2);
+  --bg-pattern-mobile: url('./assets/themes/sad.png') bottom center / cover no-repeat;
+  --bg-pattern-desktop: url('./assets/themes/sad.png') bottom center / contain no-repeat;
+  --msg-bg: rgba(135, 155, 192, 0.75);
   --msg-backdrop: blur(8px);
 }
 
 .theme-happy {
-  --bg-app: #f0fdf4;
-  --bg-panel: rgba(187, 247, 208, 0.85);
-  --text-main: #064e3b;
-  --text-muted: #047857;
-  --accent: #22c55e;
-  --border-color: rgba(34, 197, 94, 0.25);
+  --bg-app: #E3A8B9;
+  --bg-panel: rgba(227, 168, 185, 0.85);
+  --text-main: #ffffff;
+  --text-muted: #fdf2f8;
+  --accent: #fce7f3;
+  --border-color: rgba(255, 255, 255, 0.2);
   --bg-pattern-mobile: url('./assets/themes/happy.png') center / contain no-repeat;
   --bg-pattern-desktop: url('./assets/themes/happy.png') center / contain no-repeat;
-  --msg-bg: rgba(240, 253, 244, 0.75);
+  --msg-bg: rgba(227, 168, 185, 0.75);
   --msg-backdrop: blur(6px);
 }
 
