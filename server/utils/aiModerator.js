@@ -717,6 +717,7 @@ const moderateMessage = async (userId, data) => {
   const user = await User.findById(userId);
   if (!user) return { action: 'allow' };
   const now = Date.now();
+  const { message } = data;
 
   const isFirstPunishment = !user.moderation?.holdUntil && !user.moderation?.kickUntil;
 
