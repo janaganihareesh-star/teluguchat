@@ -573,28 +573,7 @@ const ChatRoom = () => {
         </div>
       </header>
 
-      {showConnectionWarning && (
-        <div 
-          style={{
-            background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)',
-            color: '#ffffff',
-            textAlign: 'center',
-            padding: '6px 16px',
-            fontSize: '0.8rem',
-            fontWeight: 'bold',
-            zIndex: 49,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          }}
-          className="animate-pulse shrink-0"
-        >
-          <span>⏳</span>
-          <span>Connecting to TeluguChat network... Please check your internet connection.</span>
-        </div>
-      )}
+
 
       {/* LEFT DRAWER OVERLAY */}
       {showDrawer && (

@@ -6,11 +6,11 @@ const User = require('../models/User');
 router.get('/', async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
-    const onlineUsers = await User.countDocuments({ isOnline: true });
+    const onlineUsersCount = global.onlineUsers ? global.onlineUsers.size : 0;
 
     res.json({
       totalUsers,
-      onlineUsers,
+      onlineUsers: onlineUsersCount,
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch stats' });

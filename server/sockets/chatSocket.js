@@ -232,14 +232,32 @@ const setupAutoClear = (io) => {
     }
   });
 
+  const rulesList = [
+    "⚠️ System Rule: Abusive language, slurs, or harassment will result in an instant ban.",
+    "⚠️ System Rule: Do not share personal information like phone numbers or exact locations here.",
+    "⚠️ System Rule: Spamming repetitive messages or promotional links is strictly prohibited.",
+    "⚠️ System Rule: Please maintain respect and keep the discussions friendly for everyone!"
+  ];
+  let currentRuleIndex = 0;
+
   // Set up 30-minute friendly reminder interval
-  setInterval(() => {
+  setInterval(async () => {
     try {
-      io.to('general').emit('system-message', {
-        message: "Don't do spam, be friendly! 😊",
-        icon: '✨'
+      const adminUser = await getOrCreateSystemAdmin();
+      if (!adminUser) return;
+
+      const ruleMsg = new Message({
+        room: 'general',
+        message: rulesList[currentRuleIndex],
+        sender: adminUser._id
       });
-      console.log('[Reminder] Broadcasted 30-min friendly reminder.');
+      await ruleMsg.save();
+
+      const populatedRuleMsg = await Message.findById(ruleMsg._id).populate('sender', 'username profilePic level badge role');
+      io.to('general').emit('receive-message', populatedRuleMsg);
+
+      currentRuleIndex = (currentRuleIndex + 1) % rulesList.length;
+      console.log('[Reminder] Broadcasted 30-min rule reminder.');
     } catch (err) {
       console.error('[Reminder] Error in friendly reminder routine:', err);
     }
