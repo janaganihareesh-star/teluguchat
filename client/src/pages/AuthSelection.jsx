@@ -50,11 +50,14 @@ const AuthSelection = () => {
     try {
       const birthYear = parseInt(guestForm.year);
       const age = new Date().getFullYear() - birthYear;
+      const monthIndex = months.indexOf(guestForm.month);
+      const dob = new Date(birthYear, monthIndex, parseInt(guestForm.day));
       
       const response = await api.post('/api/auth/guest-login', {
         username: guestForm.username,
         gender: guestForm.gender,
-        age: age
+        age: age,
+        dob: dob
       });
       
       login(response.data.user, response.data.token);
@@ -77,6 +80,8 @@ const AuthSelection = () => {
     setLoading(true);
     try {
       const birthYear = parseInt(regForm.year);
+      const monthIndex = months.indexOf(regForm.month);
+      const dob = new Date(birthYear, monthIndex, parseInt(regForm.day));
       const age = new Date().getFullYear() - birthYear;
 
       await api.post('/api/auth/register', {
@@ -85,6 +90,7 @@ const AuthSelection = () => {
         email: regForm.email,
         gender: regForm.gender,
         age: age,
+        dob: dob,
         country: 'India'
       });
 

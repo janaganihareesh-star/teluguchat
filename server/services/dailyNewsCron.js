@@ -1,11 +1,54 @@
 const cron = require('node-cron');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const News = require('../models/News');
+const User = require('../models/User');
+
+const getBirthdayUsernames = async () => {
+  try {
+    const today = new Date();
+    const todayMonth = today.getMonth();
+    const todayDate = today.getDate();
+    
+    const usersWithDob = await User.find({ dob: { $exists: true } });
+    return usersWithDob
+      .filter(u => u.dob && u.dob.getMonth() === todayMonth && u.dob.getDate() === todayDate)
+      .map(u => u.username);
+  } catch (err) {
+    console.error('[Cron] Error fetching birthdays:', err);
+    return [];
+  }
+};
 
 const initDailyNewsCron = (app) => {
   console.log('[Cron] Initializing daily morning 6:00 AM news cron job...');
   
-  const generateFallbackNews = async () => {
+  const generateFallbackNews = async (birthdayUsernames = []) => {
+    if (birthdayUsernames.length > 0) {
+      const names = birthdayUsernames.map(n => `@${n}`).join(', ');
+      
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      await News.deleteMany({ createdAt: { $lt: thirtyDaysAgo } });
+
+      const fallbackNews = await News.create({
+        title: "🎉 Happy Birthday!",
+        content: `<strong>Special Birthday Wishes! 🎂</strong><br>Wishing a very happy birthday to our lovely users: <strong>${names}</strong>!<br>May your day be filled with joy, beautiful smiles, and lots of blushing moments! 🥰<br><br><strong>Song Suggestion for you:</strong><br>'Priyathama Priyathama' from Majili 🎵`,
+        type: "birthday",
+        generatedByAI: false,
+        priority: 3,
+        authorName: "AI Assistant"
+      });
+      const io = app.get('io');
+      if (io) {
+        io.emit('new-news', fallbackNews);
+        io.to('general').emit('system-message', {
+          message: `Check out the new daily announcement: <strong>${fallbackNews.title}</strong> in the News tab!`,
+          icon: '📰'
+        });
+      }
+      return;
+    }
+
     const fallbackQuotes = [
       "Motivational Quote: 'Success lines and goals correct-e, kani nee smile chusinappudu vache happiness ae ultimate goal!' Keep blushing! 🥰",
       "Sweet thought: 'Prapancham lo unique and beautiful smile needhe... Danni single day kooda miss cheskoku!' Have a gorgeous day! 💕",
@@ -84,9 +127,11 @@ const initDailyNewsCron = (app) => {
   const generateNews = async () => {
     console.log('[Cron] Triggering daily morning 6:00 AM news generation...');
     
+    const birthdayUsernames = await getBirthdayUsernames();
+
     if (!process.env.GEMINI_API_KEY) {
       console.error('[Cron] GEMINI_API_KEY is not set. Using fallback hardcoded news.');
-      await generateFallbackNews();
+      await generateFallbackNews(birthdayUsernames);
       return;
     }
 
@@ -113,16 +158,31 @@ const initDailyNewsCron = (app) => {
         "gemini-flash-latest"
       ];
 
+      let birthdayPromptSection = "";
+      if (birthdayUsernames.length > 0) {
+        const names = birthdayUsernames.map(n => `@${n}`).join(', ');
+        birthdayPromptSection = `
+TODAY IS A BIRTHDAY OF OUR USERS: ${names}.
+IGNORE regular rules. You MUST generate a beautiful, highly engaging, connecting, and impressive Birthday Wish for these users.
+Include an amazing quote about birthdays, love, or life that makes them blush.
+Mention their usernames prominently.
+- Set 'type' to "birthday".
+`;
+      }
+
       const prompt = `
 You are an AI assistant generating exactly ONE community announcement for a Telugu chatting app. 
 Today's date is: ${new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}.
 ${recentThemes}
-Determine if today is a major festival or special day in India (e.g., Diwali, Eid, Independence Day, Sankranti, Ugadi, etc.).
+${birthdayPromptSection}
+
+If today is a birthday of users as mentioned above, ONLY generate the birthday wish.
+Otherwise, determine if today is a major festival or special day in India (e.g., Diwali, Eid, Independence Day, Sankranti, Ugadi, etc.).
 If it IS a special day:
 - Generate a short, warm wish about that day.
 - Set 'type' to "festival".
 
-If it is NOT a major special day (just a regular day), generate exactly these 3 things:
+If it is NOT a major special day and NOT a birthday, generate exactly these 3 things:
 1. A Motivational Quote / Cute Thought
 2. A thought-provoking, cute, or engaging General Question for the community (e.g. about crushes, love stories, sweet memories, things that make them blush/smile)
 3. A Telugu or Indian Song Suggestion (preferably cute, romantic, or soulful)
@@ -135,13 +195,13 @@ Write it exactly how young Telugu people chat online or talk to friends. The con
 - "Motivational Quote: 'Success lines and goals correct-e, kani nee smile chusinappudu vache happiness ae ultimate goal!' Keep blushing! 🥰"
 - "Eroju Question: Ee chat room lo evari texts chusi nee lip paina first smile vasthundi? Tag them! 😉"
 - "Ee song vinu, extreme blushing vibes in loop: 'Samajavaragamana' from Ala Vaikunthapurramuloo 🎵"
-- "Happy Diwali friends! Eroju mana families tho sweet things share chestu safely crackers kalchandi!"
+- "Happy Birthday ${birthdayUsernames.length > 0 ? birthdayUsernames[0] : 'friend'}! Eroju nee smile full ga shine avvali!"
 
 The response MUST be a valid JSON object matching this schema exactly, and NO markdown wrapping or backticks around it:
 {
   "title": "A short engaging title for the news card (include emojis)",
   "content": "A well-formatted string containing the content.",
-  "type": "festival" or "motivation"
+  "type": "birthday" or "festival" or "motivation"
 }
 `;
 
@@ -206,7 +266,7 @@ The response MUST be a valid JSON object matching this schema exactly, and NO ma
     } catch (error) {
       console.error('[Cron] Error generating daily news:', error);
       console.log('[Cron] Triggering fallback news generation due to AI failure...');
-      await generateFallbackNews();
+      await generateFallbackNews(birthdayUsernames);
     }
   };
 

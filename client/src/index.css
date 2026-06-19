@@ -13,79 +13,93 @@
 
 .theme-dark {
   --bg-app: #0f172a;
-  --bg-panel: #1e293b;
+  --bg-panel: rgba(30, 41, 59, 0.7);
   --text-main: #f8fafc;
   --text-muted: #cbd5e1;
   --accent: #3b82f6;
-  --border-color: rgba(255, 255, 255, 0.1);
-  --bg-pattern-mobile: radial-gradient(circle at center, rgba(15, 23, 42, 0.95) 0%, rgba(10, 15, 30, 0.98) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23090d16'/%3E%3Cg opacity='0.15'%3E%3Ccircle cx='400' cy='400' r='350' fill='none' stroke='%231e293b' stroke-width='1.5' /%3E%3Ccircle cx='400' cy='400' r='220' fill='none' stroke='%23334155' stroke-width='1.5' /%3E%3Ccircle cx='400' cy='400' r='100' fill='none' stroke='%23475569' stroke-width='2' /%3E%3C/g%3E%3Cg opacity='0.25'%3E%3Ccircle cx='150' cy='150' r='3' fill='%23ffffff'/%3E%3Ccircle cx='650' cy='150' r='3' fill='%23ffffff'/%3E%3Ccircle cx='150' cy='650' r='3' fill='%23ffffff'/%3E%3Ccircle cx='650' cy='650' r='3' fill='%23ffffff'/%3E%3Ccircle cx='250' cy='400' r='4' fill='%2338bdf8'/%3E%3Ccircle cx='550' cy='400' r='4' fill='%2338bdf8'/%3E%3Cline x1='150' y1='150' x2='250' y2='400' stroke='%2338bdf8' stroke-width='1.5' /%3E%3Cline x1='250' y1='400' x2='150' y2='650' stroke='%2338bdf8' stroke-width='1.5' /%3E%3Cline x1='650' y1='150' x2='550' y2='400' stroke='%2338bdf8' stroke-width='1.5' /%3E%3Cline x1='550' y1='400' x2='650' y2='650' stroke='%2338bdf8' stroke-width='1.5' /%3E%3C/g%3E%3C/svg%3E");
-  --bg-pattern-desktop: radial-gradient(circle at center, rgba(15, 23, 42, 0.9) 0%, rgba(10, 15, 30, 0.95) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23090d16'/%3E%3Cg opacity='0.15'%3E%3Ccircle cx='400' cy='400' r='350' fill='none' stroke='%231e293b' stroke-width='1.5' /%3E%3Ccircle cx='400' cy='400' r='220' fill='none' stroke='%23334155' stroke-width='1.5' /%3E%3Ccircle cx='400' cy='400' r='100' fill='none' stroke='%23475569' stroke-width='2' /%3E%3C/g%3E%3Cg opacity='0.25'%3E%3Ccircle cx='150' cy='150' r='3' fill='%23ffffff'/%3E%3Ccircle cx='650' cy='150' r='3' fill='%23ffffff'/%3E%3Ccircle cx='150' cy='650' r='3' fill='%23ffffff'/%3E%3Ccircle cx='650' cy='650' r='3' fill='%23ffffff'/%3E%3Ccircle cx='250' cy='400' r='4' fill='%2338bdf8'/%3E%3Ccircle cx='550' cy='400' r='4' fill='%2338bdf8'/%3E%3Cline x1='150' y1='150' x2='250' y2='400' stroke='%2338bdf8' stroke-width='1.5' /%3E%3Cline x1='250' y1='400' x2='150' y2='650' stroke='%2338bdf8' stroke-width='1.5' /%3E%3Cline x1='650' y1='150' x2='550' y2='400' stroke='%2338bdf8' stroke-width='1.5' /%3E%3Cline x1='550' y1='400' x2='650' y2='650' stroke='%2338bdf8' stroke-width='1.5' /%3E%3C/g%3E%3C/svg%3E");
+  --border-color: rgba(255, 255, 255, 0.2);
+  --bg-pattern-mobile: url('./assets/themes/dark.png') center / cover no-repeat;
+  --bg-pattern-desktop: url('./assets/themes/dark.png') center / cover no-repeat;
+  --msg-bg: rgba(30, 41, 59, 0.65);
+  --msg-backdrop: blur(10px);
 }
 
 .theme-lite {
   --bg-app: #f8fafc;
-  --bg-panel: #ffffff;
+  --bg-panel: rgba(255, 255, 255, 0.75);
   --text-main: #0f172a;
   --text-muted: #334155;
   --accent: #0ea5e9;
-  --border-color: rgba(0, 0, 0, 0.08);
-  --bg-pattern-mobile: radial-gradient(circle at center, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.97) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23f1f5f9'/%3E%3Cg opacity='0.25'%3E%3Cpath d='M0 100 C 150 150, 350 50, 500 120 C 650 190, 750 120, 800 150 L800 0 L0 0 Z' fill='%23bae6fd' /%3E%3Cpath d='M0 700 C 200 650, 400 750, 600 680 C 700 650, 750 670, 800 650 L800 800 L0 800 Z' fill='%23bae6fd' /%3E%3Ccircle cx='100' cy='450' r='80' fill='%23bae6fd' opacity='0.4' /%3E%3Ccircle cx='720' cy='380' r='120' fill='%23bae6fd' opacity='0.3' /%3E%3C/g%3E%3C/svg%3E");
-  --bg-pattern-desktop: radial-gradient(circle at center, rgba(248, 250, 252, 0.85) 0%, rgba(241, 245, 249, 0.94) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23f1f5f9'/%3E%3Cg opacity='0.25'%3E%3Cpath d='M0 100 C 150 150, 350 50, 500 120 C 650 190, 750 120, 800 150 L800 0 L0 0 Z' fill='%23bae6fd' /%3E%3Cpath d='M0 700 C 200 650, 400 750, 600 680 C 700 650, 750 670, 800 650 L800 800 L0 800 Z' fill='%23bae6fd' /%3E%3Ccircle cx='100' cy='450' r='80' fill='%23bae6fd' opacity='0.4' /%3E%3Ccircle cx='720' cy='380' r='120' fill='%23bae6fd' opacity='0.3' /%3E%3C/g%3E%3C/svg%3E");
+  --border-color: rgba(0, 0, 0, 0.15);
+  --bg-pattern-mobile: url('./assets/themes/lite.png') center / cover no-repeat;
+  --bg-pattern-desktop: url('./assets/themes/lite.png') center / cover no-repeat;
+  --msg-bg: rgba(255, 255, 255, 0.65);
+  --msg-backdrop: blur(10px);
 }
 
 .theme-cody {
   --bg-app: #09090b;
-  --bg-panel: #18181b;
+  --bg-panel: rgba(24, 24, 27, 0.75);
   --text-main: #fafafa;
   --text-muted: #d4d4d8;
   --accent: #14b8a6;
-  --border-color: rgba(255, 255, 255, 0.08);
-  --bg-pattern-mobile: radial-gradient(circle at center, rgba(24, 24, 27, 0.95) 0%, rgba(9, 9, 11, 0.99) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%2309090b'/%3E%3Cg opacity='0.08'%3E%3Cline x1='0' y1='0' x2='800' y2='800' stroke='%2314b8a6' stroke-width='2' /%3E%3Cline x1='800' y1='0' x2='0' y2='800' stroke='%2314b8a6' stroke-width='2' /%3E%3Cline x1='400' y1='0' x2='400' y2='800' stroke='%2314b8a6' stroke-width='2' /%3E%3Cline x1='0' y1='400' x2='800' y2='400' stroke='%2314b8a6' stroke-width='2' /%3E%3C/g%3E%3Cg opacity='0.2'%3E%3Ctext x='80' y='120' fill='%2314b8a6' font-family='monospace' font-size='22'%3Eimport React from 'react';%3C/text%3E%3Ctext x='650' y='120' fill='%2314b8a6' font-family='monospace' font-size='24'%3E&lt;/&gt;%3C/text%3E%3Ctext x='80' y='720' fill='%2314b8a6' font-family='monospace' font-size='24'%3E01101%3C/text%3E%3Ctext x='580' y='720' fill='%2314b8a6' font-family='monospace' font-size='22'%3Econst cody = true;%3C/text%3E%3C/g%3E%3C/svg%3E");
-  --bg-pattern-desktop: radial-gradient(circle at center, rgba(24, 24, 27, 0.9) 0%, rgba(9, 9, 11, 0.96) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%2309090b'/%3E%3Cg opacity='0.08'%3E%3Cline x1='0' y1='0' x2='800' y2='800' stroke='%2314b8a6' stroke-width='2' /%3E%3Cline x1='800' y1='0' x2='0' y2='800' stroke='%2314b8a6' stroke-width='2' /%3E%3Cline x1='400' y1='0' x2='400' y2='800' stroke='%2314b8a6' stroke-width='2' /%3E%3Cline x1='0' y1='400' x2='800' y2='400' stroke='%2314b8a6' stroke-width='2' /%3E%3C/g%3E%3Cg opacity='0.2'%3E%3Ctext x='80' y='120' fill='%2314b8a6' font-family='monospace' font-size='22'%3Eimport React from 'react';%3C/text%3E%3Ctext x='650' y='120' fill='%2314b8a6' font-family='monospace' font-size='24'%3E&lt;/&gt;%3C/text%3E%3Ctext x='80' y='720' fill='%2314b8a6' font-family='monospace' font-size='24'%3E01101%3C/text%3E%3Ctext x='580' y='720' fill='%2314b8a6' font-family='monospace' font-size='22'%3Econst cody = true;%3C/text%3E%3C/g%3E%3C/svg%3E");
+  --border-color: rgba(255, 255, 255, 0.2);
+  --bg-pattern-mobile: url('./assets/themes/cody.png') center / cover no-repeat;
+  --bg-pattern-desktop: url('./assets/themes/cody.png') center / cover no-repeat;
+  --msg-bg: rgba(24, 24, 27, 0.65);
+  --msg-backdrop: blur(10px);
 }
 
 .theme-love {
   --bg-app: #fdf2f8;
-  --bg-panel: #fbcfe8;
+  --bg-panel: rgba(253, 242, 248, 0.85);
   --text-main: #701a75;
   --text-muted: #9d174d;
   --accent: #ec4899;
   --border-color: rgba(236, 72, 153, 0.2);
-  --bg-pattern-mobile: radial-gradient(circle at center, rgba(253, 242, 248, 0.75) 0%, rgba(251, 207, 232, 0.88) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23fdf2f8'/%3E%3Cg opacity='0.08' fill='%23ec4899'%3E%3Cpath d='M400,700 C200,500 100,380 100,240 C100,140 180,60 280,60 C340,60 380,100 400,130 C420,100 460,60 520,60 C620,60 700,140 700,240 C700,380 600,500 400,700 Z'/%3E%3C/g%3E%3C/svg%3E");
-  --bg-pattern-desktop: radial-gradient(circle at center, rgba(253, 242, 248, 0.65) 0%, rgba(251, 207, 232, 0.78) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23fdf2f8'/%3E%3Cg opacity='0.08' fill='%23ec4899'%3E%3Cpath d='M400,700 C200,500 100,380 100,240 C100,140 180,60 280,60 C340,60 380,100 400,130 C420,100 460,60 520,60 C620,60 700,140 700,240 C700,380 600,500 400,700 Z'/%3E%3C/g%3E%3C/svg%3E");
+  --bg-pattern-mobile: url('./assets/themes/love.png') center / cover no-repeat;
+  --bg-pattern-desktop: url('./assets/themes/love.png') center / cover no-repeat;
+  --msg-bg: rgba(253, 242, 248, 0.75);
+  --msg-backdrop: blur(6px);
 }
 
 .theme-friendship {
   --bg-app: #fffbeb;
-  --bg-panel: #fef3c7;
+  --bg-panel: rgba(254, 243, 199, 0.85);
   --text-main: #431407;
   --text-muted: #7c2d12;
   --accent: #f59e0b;
   --border-color: rgba(245, 158, 11, 0.25);
-  --bg-pattern-mobile: radial-gradient(circle at center, rgba(255, 251, 235, 0.75) 0%, rgba(254, 243, 199, 0.88) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23fffbeb'/%3E%3Cg opacity='0.06' fill='%23f59e0b'%3E%3Ccircle cx='400' cy='400' r='30' /%3E%3Cpolygon points='400,400 0,0 120,0' /%3E%3Cpolygon points='400,400 240,0 360,0' /%3E%3Cpolygon points='400,400 480,0 600,0' /%3E%3Cpolygon points='400,400 720,0 800,0' /%3E%3Cpolygon points='400,400 800,120 800,240' /%3E%3Cpolygon points='400,400 800,360 800,480' /%3E%3Cpolygon points='400,400 800,600 800,720' /%3E%3Cpolygon points='400,400 720,800 600,800' /%3E%3Cpolygon points='400,400 480,800 360,800' /%3E%3Cpolygon points='400,400 240,800 120,800' /%3E%3Cpolygon points='400,400 0,800 0,720' /%3E%3Cpolygon points='400,400 0,600 0,480' /%3E%3Cpolygon points='400,400 0,360 0,240' /%3E%3Cpolygon points='400,400 0,120 0,0' /%3E%3C/g%3E%3Ccircle cx='400' cy='400' r='300' fill='none' stroke='%23fde68a' stroke-width='2' opacity='0.5'/%3E%3Ccircle cx='400' cy='400' r='200' fill='none' stroke='%23fcd34d' stroke-width='2' opacity='0.6'/%3E%3Ccircle cx='400' cy='400' r='100' fill='none' stroke='%23fbbf24' stroke-width='3' opacity='0.8'/%3E%3Cpath d='M370,390 Q380,380 390,390' fill='none' stroke='%2378350f' stroke-width='3.5' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M410,390 Q420,380 430,390' fill='none' stroke='%2378350f' stroke-width='3.5' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M380,405 Q400,425 420,405' fill='none' stroke='%2378350f' stroke-width='3.5' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M330,410 C340,395 365,395 360,420 C358,430 340,430 330,410' fill='none' stroke='%2378350f' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M470,410 C460,395 435,395 440,420 C442,430 460,430 470,410' fill='none' stroke='%2378350f' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3C/svg%3E");
-  --bg-pattern-desktop: radial-gradient(circle at center, rgba(255, 251, 235, 0.65) 0%, rgba(254, 243, 199, 0.78) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23fffbeb'/%3E%3Cg opacity='0.06' fill='%23f59e0b'%3E%3Ccircle cx='400' cy='400' r='30' /%3E%3Cpolygon points='400,400 0,0 120,0' /%3E%3Cpolygon points='400,400 240,0 360,0' /%3E%3Cpolygon points='400,400 480,0 600,0' /%3E%3Cpolygon points='400,400 720,0 800,0' /%3E%3Cpolygon points='400,400 800,120 800,240' /%3E%3Cpolygon points='400,400 800,360 800,480' /%3E%3Cpolygon points='400,400 800,600 800,720' /%3E%3Cpolygon points='400,400 720,800 600,800' /%3E%3Cpolygon points='400,400 480,800 360,800' /%3E%3Cpolygon points='400,400 240,800 120,800' /%3E%3Cpolygon points='400,400 0,800 0,720' /%3E%3Cpolygon points='400,400 0,600 0,480' /%3E%3Cpolygon points='400,400 0,360 0,240' /%3E%3Cpolygon points='400,400 0,120 0,0' /%3E%3C/g%3E%3Ccircle cx='400' cy='400' r='300' fill='none' stroke='%23fde68a' stroke-width='2' opacity='0.5'/%3E%3Ccircle cx='400' cy='400' r='200' fill='none' stroke='%23fcd34d' stroke-width='2' opacity='0.6'/%3E%3Ccircle cx='400' cy='400' r='100' fill='none' stroke='%23fbbf24' stroke-width='3' opacity='0.8'/%3E%3Cpath d='M370,390 Q380,380 390,390' fill='none' stroke='%2378350f' stroke-width='3.5' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M410,390 Q420,380 430,390' fill='none' stroke='%2378350f' stroke-width='3.5' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M380,405 Q400,425 420,405' fill='none' stroke='%2378350f' stroke-width='3.5' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M330,410 C340,395 365,395 360,420 C358,430 340,430 330,410' fill='none' stroke='%2378350f' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M470,410 C460,395 435,395 440,420 C442,430 460,430 470,410' fill='none' stroke='%2378350f' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3C/svg%3E");
+  --bg-pattern-mobile: url('./assets/themes/friendship.png') center / cover no-repeat;
+  --bg-pattern-desktop: url('./assets/themes/friendship.png') center / cover no-repeat;
+  --msg-bg: rgba(255, 251, 235, 0.75);
+  --msg-backdrop: blur(6px);
 }
 
 .theme-sad {
   --bg-app: #f8fafc;
-  --bg-panel: #e2e8f0;
+  --bg-panel: rgba(226, 232, 240, 0.85);
   --text-main: #0f172a;
   --text-muted: #334155;
   --accent: #64748b;
   --border-color: rgba(100, 116, 139, 0.25);
-  --bg-pattern-mobile: radial-gradient(circle at center, rgba(248, 250, 252, 0.8) 0%, rgba(226, 232, 240, 0.92) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23f8fafc'/%3E%3Cg opacity='0.08' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-dasharray='10,15'%3E%3Cline x1='100' y1='0' x2='80' y2='800' /%3E%3Cline x1='250' y1='0' x2='230' y2='800' /%3E%3Cline x1='400' y1='0' x2='380' y2='800' /%3E%3Cline x1='550' y1='0' x2='530' y2='800' /%3E%3Cline x1='700' y1='0' x2='680' y2='800' /%3E%3C/g%3E%3Ccircle cx='400' cy='400' r='300' fill='none' stroke='%23cbd5e1' stroke-width='2' opacity='0.5'/%3E%3Ccircle cx='400' cy='400' r='200' fill='none' stroke='%2394a3b8' stroke-width='2' opacity='0.6'/%3E%3Ccircle cx='400' cy='400' r='100' fill='none' stroke='%2364748b' stroke-width='3' opacity='0.8'/%3E%3Cpath d='M375,395 Q385,385 390,395' fill='none' stroke='%2364748b' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M410,395 Q415,385 425,395' fill='none' stroke='%2364748b' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M380,420 Q400,405 420,420' fill='none' stroke='%2364748b' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M382,398 Q380,410 382,414 Q384,410 382,398' fill='%2338bdf8' opacity='0.8'/%3E%3Cpath d='M418,398 Q416,410 418,414 Q420,410 418,398' fill='%2338bdf8' opacity='0.8'/%3E%3C/svg%3E");
-  --bg-pattern-desktop: radial-gradient(circle at center, rgba(248, 250, 252, 0.72) 0%, rgba(226, 232, 240, 0.85) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23f8fafc'/%3E%3Cg opacity='0.08' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-dasharray='10,15'%3E%3Cline x1='100' y1='0' x2='80' y2='800' /%3E%3Cline x1='250' y1='0' x2='230' y2='800' /%3E%3Cline x1='400' y1='0' x2='380' y2='800' /%3E%3Cline x1='550' y1='0' x2='530' y2='800' /%3E%3Cline x1='700' y1='0' x2='680' y2='800' /%3E%3C/g%3E%3Ccircle cx='400' cy='400' r='300' fill='none' stroke='%23cbd5e1' stroke-width='2' opacity='0.5'/%3E%3Ccircle cx='400' cy='400' r='200' fill='none' stroke='%2394a3b8' stroke-width='2' opacity='0.6'/%3E%3Ccircle cx='400' cy='400' r='100' fill='none' stroke='%2364748b' stroke-width='3' opacity='0.8'/%3E%3Cpath d='M375,395 Q385,385 390,395' fill='none' stroke='%2364748b' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M410,395 Q415,385 425,395' fill='none' stroke='%2364748b' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M380,420 Q400,405 420,420' fill='none' stroke='%2364748b' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3Cpath d='M382,398 Q380,410 382,414 Q384,410 382,398' fill='%2338bdf8' opacity='0.8'/%3E%3Cpath d='M418,398 Q416,410 418,414 Q420,410 418,398' fill='%2338bdf8' opacity='0.8'/%3E%3C/svg%3E");
+  --bg-pattern-mobile: url('./assets/themes/sad.png') center / cover no-repeat;
+  --bg-pattern-desktop: url('./assets/themes/sad.png') center / cover no-repeat;
+  --msg-bg: rgba(248, 250, 252, 0.7);
+  --msg-backdrop: blur(8px);
 }
 
 .theme-happy {
   --bg-app: #f0fdf4;
-  --bg-panel: #bbf7d0;
+  --bg-panel: rgba(187, 247, 208, 0.85);
   --text-main: #064e3b;
   --text-muted: #047857;
   --accent: #22c55e;
   --border-color: rgba(34, 197, 94, 0.25);
-  --bg-pattern-mobile: radial-gradient(circle at center, rgba(240, 253, 244, 0.75) 0%, rgba(187, 247, 208, 0.88) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23f0fdf4'/%3E%3Cg opacity='0.08' fill='%2322c55e'%3E%3Cpolygon points='400,400 0,0 100,0'/%3E%3Cpolygon points='400,400 200,0 300,0'/%3E%3Cpolygon points='400,400 400,0 500,0'/%3E%3Cpolygon points='400,400 600,0 700,0'/%3E%3Cpolygon points='400,400 800,0 800,100'/%3E%3Cpolygon points='400,400 800,200 800,300'/%3E%3Cpolygon points='400,400 800,400 800,500'/%3E%3Cpolygon points='400,400 800,600 800,720'/%3E%3Cpolygon points='400,400 800,800 700,800'/%3E%3Cpolygon points='400,400 500,800 400,800'/%3E%3Cpolygon points='400,400 300,800 200,800'/%3E%3Cpolygon points='400,400 100,800 0,800'/%3E%3Cpolygon points='400,400 0,720 0,600'/%3E%3Cpolygon points='400,400 0,480 0,360'/%3E%3Cpolygon points='400,400 0,240 0,120'/%3E%3Cpolygon points='400,400 0,100 0,0'/%3E%3C/g%3E%3Ccircle cx='400' cy='400' r='300' fill='none' stroke='%23bbf7d0' stroke-width='2' opacity='0.5'/%3E%3Ccircle cx='400' cy='400' r='200' fill='none' stroke='%2386efac' stroke-width='2' opacity='0.6'/%3E%3Ccircle cx='400' cy='400' r='100' fill='none' stroke='%234ade80' stroke-width='3' opacity='0.8'/%3E%3Ccircle cx='400' cy='400' r='40' fill='%2322c55e' opacity='0.15'/%3E%3Ccircle cx='385' cy='390' r='4' fill='%23166534' opacity='0.8'/%3E%3Ccircle cx='415' cy='390' r='4' fill='%23166534' opacity='0.8'/%3E%3Cpath d='M380,410 Q400,430 420,410' fill='none' stroke='%23166534' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3C/svg%3E");
-  --bg-pattern-desktop: radial-gradient(circle at center, rgba(240, 253, 244, 0.65) 0%, rgba(187, 247, 208, 0.78) 100%), url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 800'%3E%3Crect width='100%25' height='100%25' fill='%23f0fdf4'/%3E%3Cg opacity='0.08' fill='%2322c55e'%3E%3Cpolygon points='400,400 0,0 100,0'/%3E%3Cpolygon points='400,400 200,0 300,0'/%3E%3Cpolygon points='400,400 400,0 500,0'/%3E%3Cpolygon points='400,400 600,0 700,0'/%3E%3Cpolygon points='400,400 800,0 800,100'/%3E%3Cpolygon points='400,400 800,200 800,300'/%3E%3Cpolygon points='400,400 800,400 800,500'/%3E%3Cpolygon points='400,400 800,600 800,720'/%3E%3Cpolygon points='400,400 800,800 700,800'/%3E%3Cpolygon points='400,400 500,800 400,800'/%3E%3Cpolygon points='400,400 300,800 200,800'/%3E%3Cpolygon points='400,400 100,800 0,800'/%3E%3Cpolygon points='400,400 0,720 0,600'/%3E%3Cpolygon points='400,400 0,480 0,360'/%3E%3Cpolygon points='400,400 0,240 0,120'/%3E%3Cpolygon points='400,400 0,100 0,0'/%3E%3C/g%3E%3Ccircle cx='400' cy='400' r='300' fill='none' stroke='%23bbf7d0' stroke-width='2' opacity='0.5'/%3E%3Ccircle cx='400' cy='400' r='200' fill='none' stroke='%2386efac' stroke-width='2' opacity='0.6'/%3E%3Ccircle cx='400' cy='400' r='100' fill='none' stroke='%234ade80' stroke-width='3' opacity='0.8'/%3E%3Ccircle cx='400' cy='400' r='40' fill='%2322c55e' opacity='0.15'/%3E%3Ccircle cx='385' cy='390' r='4' fill='%23166534' opacity='0.8'/%3E%3Ccircle cx='415' cy='390' r='4' fill='%23166534' opacity='0.8'/%3E%3Cpath d='M380,410 Q400,430 420,410' fill='none' stroke='%23166534' stroke-width='3' stroke-linecap='round' opacity='0.8'/%3E%3C/svg%3E");
+  --bg-pattern-mobile: url('./assets/themes/happy.png') center / cover no-repeat;
+  --bg-pattern-desktop: url('./assets/themes/happy.png') center / cover no-repeat;
+  --msg-bg: rgba(240, 253, 244, 0.75);
+  --msg-backdrop: blur(6px);
 }
 
 html {
@@ -133,4 +147,34 @@ input::placeholder, textarea::placeholder {
 select option {
   color: var(--text-main);
   background-color: var(--bg-panel);
+}
+
+/* Global Cursor Fix for Interactive Elements */
+button:not(:disabled), 
+a:not(:disabled), 
+select:not(:disabled), 
+[role="button"]:not(:disabled),
+.cursor-pointer,
+svg,
+input[type="submit"]:not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+label,
+.hover\:bg-white\/5,
+.hover\:bg-slate-50,
+.hover\:scale-105,
+.transition-transform {
+  cursor: pointer;
+}
+
+/* Ensure disabled elements show appropriate cursor */
+:disabled {
+  cursor: not-allowed !important;
+}
+
+/* Reset for explicitly non-interactive items */
+.cursor-default,
+.pointer-events-none {
+  cursor: default !important;
 }

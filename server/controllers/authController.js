@@ -9,7 +9,7 @@ const generateOTP = () => {
 
 exports.register = async (req, res) => {
   try {
-    const { username, email, password, age, gender, country } = req.body;
+    const { username, email, password, age, gender, country, dob } = req.body;
 
     if (age < 18) {
       return res.status(400).json({ message: 'You must be at least 18 years old to register.' });
@@ -61,6 +61,7 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       age,
+      dob,
       gender: gender ? gender.toLowerCase() : undefined,
       country,
       otp,
@@ -172,7 +173,7 @@ exports.login = async (req, res) => {
 
 exports.guestLogin = async (req, res) => {
   try {
-    const { username, gender, age } = req.body;
+    const { username, gender, age, dob } = req.body;
     
     // Generate a unique guest username and email to prevent collisions
     const guestId = Math.floor(1000 + Math.random() * 9000).toString();
@@ -187,6 +188,7 @@ exports.guestLogin = async (req, res) => {
       email: guestEmail,
       password: hashedPassword,
       age: age || 18,
+      dob: dob,
       gender: gender.toLowerCase() || 'male',
       country: 'India',
       isVerified: true,

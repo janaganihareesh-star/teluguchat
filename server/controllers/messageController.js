@@ -5,10 +5,23 @@ exports.getMessages = async (req, res) => {
     const { room } = req.params;
     const { page = 1, limit = 50 } = req.query;
     
-    const messages = await Message.find({ 
+    const filter = {
       room,
-      isDeleted: { $ne: true }
-    })
+      isDeleted: { $ne: true },
+      $or: [
+        { mentions: { $exists: false } },
+        { mentions: { $size: 0 } },
+        { sender: req.user._id },
+        { mentions: `@${req.user.username}` },
+        { mentions: req.user.username }
+      ]
+    };
+
+    if (req.user.role === 'admin') {
+      delete filter.$or; // Admins can see all messages
+    }
+
+    const messages = await Message.find(filter)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
@@ -24,10 +37,23 @@ exports.getMessages = async (req, res) => {
 exports.getMessagesSince = async (req, res) => {
   try {
     const { room, timestamp } = req.params;
-    const messages = await Message.find({ 
+    const filter = {
       room, 
-      createdAt: { $gt: new Date(timestamp) } 
-    })
+      createdAt: { $gt: new Date(timestamp) },
+      $or: [
+        { mentions: { $exists: false } },
+        { mentions: { $size: 0 } },
+        { sender: req.user._id },
+        { mentions: `@${req.user.username}` },
+        { mentions: req.user.username }
+      ]
+    };
+
+    if (req.user.role === 'admin') {
+      delete filter.$or;
+    }
+
+    const messages = await Message.find(filter)
       .sort({ createdAt: 1 })
       .populate('sender', 'username profilePic level badge role');
 

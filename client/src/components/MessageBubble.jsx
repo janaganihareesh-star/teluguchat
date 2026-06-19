@@ -206,7 +206,8 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
           display: 'flex',
           gap: '12px',
           padding: '12px 16px',
-          background: 'transparent',
+          background: 'var(--msg-bg, transparent)',
+          backdropFilter: 'var(--msg-backdrop, none)',
           borderBottom: '1px solid var(--border-color)',
           alignItems: 'flex-start',
           transform: `translateX(${translateX}px)`,
@@ -382,12 +383,25 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
 
 {showReactionPicker && (
   <div style={{ marginTop: '8px', zIndex: 50, position: 'relative', width: 'max-content' }}>
-    <Suspense fallback={<div className="text-xs text-slate-400 p-2 border rounded-lg bg-slate-50">Loading emojis...</div>}>
-      <EmojiPicker onEmojiSelect={handleReaction} className="bg-white rounded-lg shadow-xl z-50 border border-slate-200" />
-    </Suspense>
+    <div className="flex items-center gap-2 bg-slate-800 rounded-full px-4 py-2 shadow-xl border border-slate-700">
+      {['👍', '❤️', '😮', '😢', '🙏', '👎'].map(emoji => (
+        <button
+          key={emoji}
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            handleReaction(emoji); 
+            setShowReactionPicker(false); 
+          }}
+          className="text-2xl hover:scale-125 transition-transform origin-bottom cursor-pointer p-1 leading-none bg-transparent border-none"
+          title="React"
+        >
+          {emoji}
+        </button>
+      ))}
+    </div>
     <button 
       onClick={(e) => { e.stopPropagation(); setShowReactionPicker(false); }}
-      className="absolute -top-3 -right-3 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-md z-[60]"
+      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-md z-[60] border-none cursor-pointer"
     >
       ✕
     </button>

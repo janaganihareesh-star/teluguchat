@@ -21,7 +21,15 @@ const NewsModal = ({ onClose }) => {
         const token = localStorage.getItem('token');
         const config = { headers: { Authorization: `Bearer ${token}` } };
         const res = await api.get('/api/news', config);
-        setNewsItems(res.data);
+        
+        // Filter to only show news from the most recent day (hide old news)
+        let displayNews = [];
+        if (res.data && res.data.length > 0) {
+          const latestDate = new Date(res.data[0].createdAt).toDateString();
+          displayNews = res.data.filter(item => new Date(item.createdAt).toDateString() === latestDate);
+        }
+        
+        setNewsItems(displayNews);
         
         // Initialize reactions for fetched items
         const initReactions = {};

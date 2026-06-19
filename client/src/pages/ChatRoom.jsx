@@ -59,6 +59,7 @@ const ChatRoom = () => {
   const [showTheme, setShowTheme] = useState(false);
   const [showNews, setShowNews] = useState(false);
   const [showLeaderboards, setShowLeaderboards] = useState(false);
+  const [showConnectionWarning, setShowConnectionWarning] = useState(false);
 
   // Reporting state
   const [reportMessageData, setReportMessageData] = useState(null);
@@ -93,6 +94,18 @@ const ChatRoom = () => {
       setShowNewMessageBadge(false);
     }
   };
+
+  useEffect(() => {
+    let timeout;
+    if (!isConnected || reconnecting) {
+      timeout = setTimeout(() => {
+        setShowConnectionWarning(true);
+      }, 8000);
+    } else {
+      setShowConnectionWarning(false);
+    }
+    return () => clearTimeout(timeout);
+  }, [isConnected, reconnecting]);
 
   useEffect(() => {
     const handleOpenProfile = () => {
@@ -179,11 +192,17 @@ const ChatRoom = () => {
       ));
     });
 
+    socket.on('coin-earned', (data) => {
+      setToastMessage(data.message);
+      setTimeout(() => setToastMessage(null), 5000);
+      soundSystem.notificationAlert?.();
+    });
+
     return () => {
       socket.emit('leave-room', roomId);
       socket.off('connect', onConnect);
       ['chats-cleared', 'user-typing', 'user-stop-typing', 'message-rejected',
-       'system-message', 'level-up', 'activity-reward', 'moderation-event', 'reaction-updated']
+       'system-message', 'level-up', 'activity-reward', 'moderation-event', 'reaction-updated', 'coin-earned']
         .forEach(e => socket.off(e));
     };
   }, [socket, token]);
@@ -554,7 +573,7 @@ const ChatRoom = () => {
         </div>
       </header>
 
-      {(!isConnected || reconnecting) && (
+      {showConnectionWarning && (
         <div 
           style={{
             background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)',
@@ -615,8 +634,7 @@ const ChatRoom = () => {
                     setHasSeenNews(true);
                     localStorage.setItem('hasSeenNews', 'true');
                   }},
-                  { icon: '🏅', label: 'Leaderboards', action: () => setShowLeaderboards(true) },
-                  { icon: '🎵', label: 'Music Player', action: () => window.dispatchEvent(new Event('toggle-music-player')) }
+                  { icon: '🏅', label: 'Leaderboards', action: () => setShowLeaderboards(true) }
                 ].map((item, idx) => (
                   <button key={idx} onClick={() => { item.action(); setShowDrawer(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm font-medium transition relative">
                     <span>{item.icon}</span>

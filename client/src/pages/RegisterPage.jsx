@@ -32,6 +32,8 @@ const RegisterPage = () => {
     setLoading(true);
     try {
       const birthYear = parseInt(form.year);
+      const monthIndex = months.indexOf(form.month);
+      const dob = new Date(birthYear, monthIndex, parseInt(form.day));
       const age = new Date().getFullYear() - birthYear;
 
       await api.post('/api/auth/register', {
@@ -40,6 +42,7 @@ const RegisterPage = () => {
         email: form.email,
         gender: form.gender,
         age: age,
+        dob: dob,
         country: 'India'
       });
 

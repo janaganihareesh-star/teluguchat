@@ -16,17 +16,20 @@ const addActivityReward = async (userId, activityType, io) => {
 
     let xpAmount = 0;
 
+    let coinEarnedMsg = null;
     if (activityType === 'message') {
       xpAmount = 10;
       user.messageCount = (user.messageCount || 0) + 1;
       if (user.messageCount > 0 && user.messageCount % 10 === 0) {
         user.coins = (user.coins || 0) + 1;
+        coinEarnedMsg = 'You earned 1 Coin for sending 10 messages! 💬🎉';
       }
     } else if (activityType === 'online') {
       xpAmount = 5;
       user.onlineMinutes = (user.onlineMinutes || 0) + 1;
       if (user.onlineMinutes > 0 && user.onlineMinutes % 30 === 0) {
         user.coins = (user.coins || 0) + 1;
+        coinEarnedMsg = 'You earned 1 Coin for staying active for 30 minutes! ⏳🎉';
       }
     }
 
@@ -63,6 +66,23 @@ const addActivityReward = async (userId, activityType, io) => {
         coins: user.coins,
         leveledUp
       });
+      
+      if (coinEarnedMsg) {
+        const adminUser = await User.findOne({ role: 'admin' }) || await User.findOne({ username: 'Admin' });
+        if (adminUser) {
+          const notif = new Notification({
+            recipient: user._id,
+            sender: adminUser._id,
+            type: 'system',
+            message: coinEarnedMsg,
+            link: '/goals'
+          });
+          await notif.save();
+          const populatedNotif = await Notification.findById(notif._id).populate('sender', 'username profilePic level badge role gender');
+          io.to(userSocketInfo.socketId).emit('new-notification', populatedNotif);
+          io.to(userSocketInfo.socketId).emit('coin-earned', { message: coinEarnedMsg });
+        }
+      }
     }
 
     if (leveledUp) {
@@ -531,6 +551,23 @@ module.exports = (io) => {
         const excludedSocketIds = await getRestrictedSocketIds(senderId, io);
         if (isIgnored) {
           socket.emit('receive-message', populatedMessage);
+        } else if (mentions && mentions.length > 0) {
+          console.log("Broadcasting private mention to specific users");
+          
+          socket.emit('receive-message', populatedMessage); // Emit to sender
+          
+          for (const [id, userSocket] of global.onlineUsers.entries()) {
+            if (id === senderId) continue;
+            
+            const isAdmin = userSocket.role === 'admin';
+            const isMentioned = mentions.some(m => m.replace('@', '') === userSocket.username);
+            
+            if (isAdmin || isMentioned) {
+              if (!excludedSocketIds.includes(userSocket.socketId)) {
+                io.to(userSocket.socketId).emit('receive-message', populatedMessage);
+              }
+            }
+          }
         } else {
           console.log("Message received from client");
           console.log("Broadcasting message to room", roomId);
