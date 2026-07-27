@@ -15,7 +15,10 @@ import { soundSystem } from './utils/soundSystem';
 
 import ChatRoom from './pages/ChatRoom';
 import InboxPage from './pages/InboxPage';
+import GroupRoom from './pages/GroupRoom';
 
+
+import BlindChat from './pages/BlindChat';
 
 import AdminPanel from './pages/AdminPanel';
 import MobileNav from './components/MobileNav';
@@ -55,26 +58,26 @@ function App() {
               <NotificationProvider>
                 <ChatProvider>
                   <InboxProvider>
-                    <div className="min-h-[100dvh] bg-gray-900 font-sans transition-colors duration-300 relative">
-                      <Routes>
-                        <Route path="/" element={<LandingPage />} />
-                        <Route path="/auth" element={<AuthSelection />} />
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/register" element={<RegisterPage />} />
-                        
-                        <Route path="/chat" element={<ProtectedRoute><ChatRoom /></ProtectedRoute>} />
-                        <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
-                        <Route path="/profile" element={<Navigate to="/chat" replace />} />
-                        <Route path="/profile/:username" element={<Navigate to="/chat" replace />} />
-                        
-                        
-                        
-                        
-                        <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
-                      </Routes>
-                      <MusicPlayer />
-                      <CookieBanner />
-                    </div>
+                      <div className="min-h-[100dvh] bg-gray-900 font-sans transition-colors duration-300 relative pb-[62px] md:pb-0">
+                        <Routes>
+                          <Route path="/" element={<LandingPage />} />
+                          <Route path="/auth" element={<AuthSelection />} />
+                          <Route path="/login" element={<LoginPage />} />
+                          <Route path="/register" element={<RegisterPage />} />
+                          
+                          <Route path="/blind-chat" element={<ProtectedRoute><BlindChat /></ProtectedRoute>} />
+                          <Route path="/chat" element={<ProtectedRoute><ChatRoom /></ProtectedRoute>} />
+                          <Route path="/group/:groupId" element={<ProtectedRoute><GroupRoom /></ProtectedRoute>} />
+                          <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
+                          <Route path="/profile" element={<Navigate to="/chat" replace />} />
+                          <Route path="/profile/:username" element={<Navigate to="/chat" replace />} />
+                          
+                          <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+                        </Routes>
+                        <MobileNav />
+                        <MusicPlayer />
+                        <CookieBanner />
+                      </div>
                   </InboxProvider>
                 </ChatProvider>
               </NotificationProvider>

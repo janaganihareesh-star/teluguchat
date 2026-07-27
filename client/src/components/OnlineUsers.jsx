@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import UserBadge from './UserBadge';
 import axios from 'axios';
 import api from '../services/api';
+import GroupsList from './GroupsList';
 
 const OnlineUsers = ({ onSelectUser, onClose, theme = 'dark' }) => {
   const { socket, onlineUsers, isConnected, reconnecting } = useSocket();

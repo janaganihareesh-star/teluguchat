@@ -20,7 +20,10 @@ const AuthSelection = () => {
 
   // Forms state
   const [guestForm, setGuestForm] = useState({ username: '', gender: 'Male', day: '1', month: 'January', year: '2000' });
-  const [regForm, setRegForm] = useState({ username: '', password: '', email: '', gender: 'Male', day: '1', month: 'January', year: '2000' });
+  const [regForm, setRegForm] = useState({ username: '', password: '', confirmPassword: '', email: '', gender: 'Male', bloodGroup: "Don't Know", day: '1', month: 'January', year: '2000' });
+  
+  const [regStep, setRegStep] = useState(1);
+  const [otp, setOtp] = useState('');
   
   // Async flow state
   const [loading, setLoading] = useState(false);
@@ -76,6 +79,11 @@ const AuthSelection = () => {
       setError('Username, Password, and Email are required.');
       return;
     }
+    if (regForm.password !== regForm.confirmPassword) {
+      setError('Password did not match please check');
+      return;
+    }
+
     setError('');
     setLoading(true);
     try {
@@ -89,19 +97,42 @@ const AuthSelection = () => {
         password: regForm.password,
         email: regForm.email,
         gender: regForm.gender,
+        bloodGroup: regForm.bloodGroup,
         age: age,
         dob: dob,
         country: 'India'
       });
 
-      setSuccess('Registration successful! Redirecting to login...');
+      setSuccess('Registration successful! Please check your email for the OTP.');
+      setRegStep(2); // Move to OTP step
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    if (!otp.trim()) {
+      setError('OTP is required.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      await api.post('/api/auth/verify', {
+        email: regForm.email,
+        otp: otp
+      });
+      setSuccess('Email verified successfully! Redirecting to login...');
       setTimeout(() => {
         setShowRegister(false);
         setSuccess('');
         navigate('/login');
       }, 2000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Try again.');
+      setError(err.response?.data?.message || 'Invalid or expired OTP. Try again.');
     } finally {
       setLoading(false);
     }
@@ -111,7 +142,8 @@ const AuthSelection = () => {
     setError('');
     setSuccess('');
     setShowPassword(false);
-    setRegForm({ username: '', password: '', email: '', gender: 'Male', day: '1', month: 'January', year: '2000' });
+    setRegStep(1);
+    setRegForm({ username: '', password: '', confirmPassword: '', email: '', gender: 'Male', bloodGroup: "Don't Know", day: '1', month: 'January', year: '2000' });
     setShowRegister(true);
   };
 
@@ -203,37 +235,76 @@ const AuthSelection = () => {
         <div style={overlay} onClick={() => setShowRegister(false)}>
           <div style={{ ...modal, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <button style={closeBtn} onClick={() => setShowRegister(false)}>×</button>
-            <h2 style={{ color: PRIMARY, marginBottom: '20px', fontSize: '1.2rem', textAlign: 'center' }}>✏️ Create Account</h2>
+            <h2 style={{ color: PRIMARY, marginBottom: '20px', fontSize: '1.2rem', textAlign: 'center' }}>
+              {regStep === 1 ? '✏️ Create Account' : '🔒 Verify Email'}
+            </h2>
             
             {error && <div style={{ background: '#ffebee', color: '#c62828', padding: '10px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.82rem', textAlign: 'center' }}>{error}</div>}
             {success && <div style={{ background: '#e8f5e9', color: '#2e7d32', padding: '10px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.82rem', textAlign: 'center' }}>{success}</div>}
 
-            <form onSubmit={handleRegisterSubmit}>
-              <input style={inp} placeholder="Username" value={regForm.username} onChange={e => setRegForm({ ...regForm, username: e.target.value })} required />
-              <div style={{ position: 'relative', marginBottom: '12px' }}>
-                <input style={{ ...inp, marginBottom: 0, paddingRight: '45px' }} type={showPassword ? 'text' : 'password'} placeholder="Password" value={regForm.password} onChange={e => setRegForm({ ...regForm, password: e.target.value })} required />
-                <span onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: '1.2rem', userSelect: 'none', zIndex: 10 }}>
-                  {showPassword ? '👁️' : '🙈'}
-                </span>
-              </div>
-              <input style={inp} type="email" placeholder="Email" value={regForm.email} onChange={e => setRegForm({ ...regForm, email: e.target.value })} required />
-              <select style={{ ...inp }} value={regForm.gender} onChange={e => setRegForm({ ...regForm, gender: e.target.value })}>
-                <option>Male</option><option>Female</option><option>Other</option>
-              </select>
-              <label style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '6px', display: 'block' }}>Date of Birth</label>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                <select style={sel} value={regForm.day} onChange={e => setRegForm({ ...regForm, day: e.target.value })}>{days.map(d=><option key={d} value={d}>{d}</option>)}</select>
-                <select style={sel} value={regForm.month} onChange={e => setRegForm({ ...regForm, month: e.target.value })}>{months.map(m=><option key={m} value={m}>{m}</option>)}</select>
-                <select style={sel} value={regForm.year} onChange={e => setRegForm({ ...regForm, year: e.target.value })}>{years.map(y=><option key={y} value={y}>{y}</option>)}</select>
-              </div>
-              <button type="submit" disabled={loading} style={{ width: '100%', background: `linear-gradient(135deg, ${GOLD}, #d97706)`, color: '#1f2937', border: 'none', borderRadius: '10px', padding: '13px', fontSize: '1rem', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '12px', opacity: loading ? 0.7 : 1 }}>
-                {loading ? 'Creating...' : '✏️ Register Now'}
-              </button>
-            </form>
+            {regStep === 1 ? (
+              <form onSubmit={handleRegisterSubmit}>
+                <input style={inp} placeholder="Username" value={regForm.username} onChange={e => setRegForm({ ...regForm, username: e.target.value })} required />
+                <input style={inp} type="email" placeholder="Email" value={regForm.email} onChange={e => setRegForm({ ...regForm, email: e.target.value })} required />
+                
+                <div style={{ position: 'relative', marginBottom: '12px' }}>
+                  <input style={{ ...inp, marginBottom: 0, paddingRight: '45px' }} type={showPassword ? 'text' : 'password'} placeholder="Password" value={regForm.password} onChange={e => setRegForm({ ...regForm, password: e.target.value })} required />
+                  <span onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: '1.2rem', userSelect: 'none', zIndex: 10 }}>
+                    {showPassword ? '👁️' : '🙈'}
+                  </span>
+                </div>
 
-            <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#9ca3af', marginTop: '14px' }}>
-              Already have an account? <span onClick={() => { setShowRegister(false); navigate('/login'); }} style={{ color: PRIMARY, cursor: 'pointer', fontWeight: 'bold' }}>Login</span>
-            </p>
+                <input style={inp} type={showPassword ? 'text' : 'password'} placeholder="Confirm Password" value={regForm.confirmPassword} onChange={e => setRegForm({ ...regForm, confirmPassword: e.target.value })} required />
+
+                <select style={{ ...inp }} value={regForm.gender} onChange={e => setRegForm({ ...regForm, gender: e.target.value })}>
+                  <option>Male</option><option>Female</option><option>Other</option>
+                </select>
+                <select style={{ ...inp }} value={regForm.bloodGroup} onChange={e => setRegForm({ ...regForm, bloodGroup: e.target.value })}>
+                  <option value="Don't Know">Blood Group: Unknown</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+
+                <label style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '6px', display: 'block' }}>Date of Birth</label>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                  <select style={sel} value={regForm.day} onChange={e => setRegForm({ ...regForm, day: e.target.value })}>{days.map(d=><option key={d} value={d}>{d}</option>)}</select>
+                  <select style={sel} value={regForm.month} onChange={e => setRegForm({ ...regForm, month: e.target.value })}>{months.map(m=><option key={m} value={m}>{m}</option>)}</select>
+                  <select style={sel} value={regForm.year} onChange={e => setRegForm({ ...regForm, year: e.target.value })}>{years.map(y=><option key={y} value={y}>{y}</option>)}</select>
+                </div>
+                <button type="submit" disabled={loading} style={{ width: '100%', background: `linear-gradient(135deg, ${GOLD}, #d97706)`, color: '#1f2937', border: 'none', borderRadius: '10px', padding: '13px', fontSize: '1rem', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '12px', opacity: loading ? 0.7 : 1 }}>
+                  {loading ? 'Creating...' : '✏️ Register Now'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOTP}>
+                <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#6b7280', marginBottom: '15px' }}>
+                  We sent a 6-digit OTP to <strong>{regForm.email}</strong>.
+                </p>
+                <input 
+                  style={{ ...inp, textAlign: 'center', letterSpacing: '4px', fontSize: '1.2rem', fontWeight: 'bold' }} 
+                  placeholder="Enter OTP" 
+                  value={otp} 
+                  onChange={e => setOtp(e.target.value)} 
+                  maxLength="6"
+                  required 
+                />
+                <button type="submit" disabled={loading} style={{ width: '100%', background: `linear-gradient(135deg, ${PRIMARY}, #312e81)`, color: '#fff', border: 'none', borderRadius: '10px', padding: '13px', fontSize: '1.05rem', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+                  {loading ? 'Verifying...' : 'Verify OTP'}
+                </button>
+              </form>
+            )}
+
+            {regStep === 1 && (
+              <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#9ca3af', marginTop: '14px' }}>
+                Already have an account? <span onClick={() => { setShowRegister(false); navigate('/login'); }} style={{ color: PRIMARY, cursor: 'pointer', fontWeight: 'bold' }}>Login</span>
+              </p>
+            )}
           </div>
         </div>
       )}

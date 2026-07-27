@@ -45,6 +45,7 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
   const [lightboxSrc, setLightboxSrc] = useState('');
   const [reactions, setReactions] = useState(message.reactions || []);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [viewOnceRevealed, setViewOnceRevealed] = useState(false);
   const menuRef = useRef(null);
 
   // Swipe gesture state
@@ -208,7 +209,7 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
           padding: '12px 16px',
           background: 'var(--msg-bg, transparent)',
           backdropFilter: 'var(--msg-backdrop, none)',
-          borderBottom: '1px solid var(--border-color)',
+          borderBottom: 'none',
           alignItems: 'flex-start',
           transform: `translateX(${translateX}px)`,
           transition: isSwiping ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -270,6 +271,44 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
                 </div>
               </button>
               <button 
+                onClick={(e) => { e.stopPropagation(); setShowMenu(false); window.dispatchEvent(new CustomEvent('reply-message', { detail: { message } })); }} 
+                className="flex items-center gap-4 w-full px-5 py-3 text-left hover:bg-slate-50 transition"
+              >
+                <span className="text-[#6366f1] text-xl">💬</span>
+                <div className="flex flex-col leading-tight">
+                  <span className="font-bold text-[0.95rem] text-slate-800">Reply</span>
+                  <span className="text-[0.75rem] text-slate-500">Reply to this message</span>
+                </div>
+              </button>
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setShowMenu(false); 
+                  if (window.onStarMessage) window.onStarMessage(message._id); 
+                }} 
+                className="flex items-center gap-4 w-full px-5 py-3 text-left hover:bg-slate-50 transition border-t border-slate-100"
+              >
+                <span className="text-yellow-500 text-xl">{message.isStarredBy?.includes(currentUser?._id) ? '⭐' : '☆'}</span>
+                <div className="flex flex-col leading-tight">
+                  <span className="font-bold text-[0.95rem] text-slate-800">{message.isStarredBy?.includes(currentUser?._id) ? 'Unstar' : 'Star'}</span>
+                  <span className="text-[0.75rem] text-slate-500">Save this message</span>
+                </div>
+              </button>
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setShowMenu(false); 
+                  if (window.onTranslateMessage) window.onTranslateMessage(message._id, message.message); 
+                }} 
+                className="flex items-center gap-4 w-full px-5 py-3 text-left hover:bg-slate-50 transition"
+              >
+                <span className="text-[#10b981] text-xl">🌍</span>
+                <div className="flex flex-col leading-tight">
+                  <span className="font-bold text-[0.95rem] text-slate-800">Translate</span>
+                  <span className="text-[0.75rem] text-slate-500">Translate to Telugu</span>
+                </div>
+              </button>
+              <button 
                 onClick={(e) => { e.stopPropagation(); setShowMenu(false); onReport && onReport(message); }} 
                 className="flex items-center gap-4 w-full px-5 py-3 text-left hover:bg-slate-50 transition"
               >
@@ -279,6 +318,18 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
                   <span className="text-[0.75rem] text-slate-500">Report this content</span>
                 </div>
               </button>
+              {currentUser?._id === message.sender?._id && !message.isDeleted && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(false); window.dispatchEvent(new CustomEvent('delete-message', { detail: { messageId: message._id } })); }} 
+                  className="flex items-center gap-4 w-full px-5 py-3 text-left hover:bg-red-50 transition"
+                >
+                  <span className="text-red-500 text-xl">🗑️</span>
+                  <div className="flex flex-col leading-tight">
+                    <span className="font-bold text-[0.95rem] text-red-600">Delete</span>
+                    <span className="text-[0.75rem] text-red-400">Delete for everyone</span>
+                  </div>
+                </button>
+              )}
               <button 
                 onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowReactionPicker(!showReactionPicker); }} 
                 className="flex items-center gap-4 w-full px-5 py-3 text-left hover:bg-slate-50 transition border-t border-slate-100"
@@ -313,9 +364,17 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
 
             {/* Time and options dots */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="text-[10px] text-slate-400 font-medium">
-                {formatMsgTime(message.createdAt)}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {formatMsgTime(message.createdAt)}
+                </span>
+                {/* Read Receipts for Private Messages sent by current user */}
+                {message.receiver && currentUser?._id === message.sender?._id && (
+                  <span className="text-[10px]" style={{ color: message.isRead ? '#3b82f6' : '#94a3b8' }}>
+                    {message.isRead ? '✓✓' : '✓✓'}
+                  </span>
+                )}
+              </div>
               <button onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer' }} title="Options">
                 •••
               </button>
@@ -348,9 +407,36 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
             </div>
           )}
 
-          <p className="text-[0.88rem] whitespace-pre-wrap break-words leading-relaxed" style={{ color: 'var(--text-main)' }}>
-            {renderMessageText(message.message)}
-          </p>
+          {message.isViewOnce && !viewOnceRevealed ? (
+            <div 
+              onClick={(e) => { e.stopPropagation(); setViewOnceRevealed(true); }}
+              className="mt-2 p-3 rounded-lg flex flex-col items-center justify-center cursor-pointer bg-slate-800 border border-indigo-500/30 text-indigo-400 hover:bg-slate-700 transition"
+              style={{ minHeight: '60px' }}
+            >
+              <FaGhost className="text-2xl mb-1 opacity-70" />
+              <span className="text-xs font-bold uppercase tracking-wide">View Once Message</span>
+              <span className="text-[10px] opacity-60">Click to reveal</span>
+            </div>
+          ) : (
+            <div className={message.isViewOnce ? "relative p-3 bg-slate-800 rounded-lg mt-2 border border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.2)]" : ""}>
+              {message.isViewOnce && (
+                <div className="absolute top-1 right-2 text-[10px] text-indigo-400 font-bold uppercase flex items-center gap-1">
+                  <FaGhost /> Revealed
+                </div>
+              )}
+              <p 
+                className="text-[0.88rem] whitespace-pre-wrap break-words leading-relaxed" 
+                style={{ 
+                  color: 'var(--text-main)', 
+                  fontStyle: message.isDeleted ? 'italic' : 'normal',
+                  opacity: message.isDeleted ? 0.6 : 1,
+                  marginTop: message.isViewOnce ? '12px' : '0'
+                }}
+              >
+                {renderMessageText(message.message)}
+              </p>
+            </div>
+          )}
 {reactions.length > 0 && (
   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
     {Object.entries(
@@ -408,8 +494,74 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
   </div>
 )}
 
+          {/* Contact Share Rendering */}
+          {message.contact && message.contact.name && isVisible && (
+            <div className="mt-2 p-3 bg-slate-800 rounded-xl border border-slate-700 flex items-center gap-3 w-48">
+              <div className="w-10 h-10 bg-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center text-xl">
+                👤
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-bold text-slate-200 truncate">{message.contact.name}</div>
+                <div className="text-xs text-slate-400 truncate">{message.contact.phone}</div>
+              </div>
+            </div>
+          )}
+
+          {/* Location Rendering */}
+          {message.location && message.location.lat && isVisible && (
+            <div className="mt-2 rounded-xl overflow-hidden border border-slate-700 max-w-[240px]">
+              <a href={`https://www.google.com/maps/search/?api=1&query=${message.location.lat},${message.location.lng}`} target="_blank" rel="noreferrer" className="block relative group">
+                <div className="bg-slate-800 p-8 flex items-center justify-center text-3xl opacity-80 group-hover:opacity-100 transition">
+                  📍
+                </div>
+                <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 text-xs text-center text-white backdrop-blur-sm">
+                  View on Map
+                </div>
+              </a>
+            </div>
+          )}
+
+          {/* Poll Rendering */}
+          {message.poll && message.poll.question && isVisible && (
+            <div className="mt-3 p-4 bg-slate-800/80 rounded-xl border border-slate-700 min-w-[200px]">
+              <div className="text-sm font-bold text-white mb-3">📊 {message.poll.question}</div>
+              <div className="space-y-2">
+                {message.poll.options.map((opt, idx) => {
+                  const totalVotes = message.poll.options.reduce((acc, curr) => acc + (curr.votes?.length || 0), 0);
+                  const optVotes = opt.votes?.length || 0;
+                  const percentage = totalVotes === 0 ? 0 : Math.round((optVotes / totalVotes) * 100);
+                  const hasVoted = opt.votes?.includes(currentUser?._id);
+                  
+                  return (
+                    <button 
+                      key={idx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.onPollVote) window.onPollVote(message._id, idx);
+                      }}
+                      className="relative w-full text-left overflow-hidden rounded-lg bg-slate-900 border hover:border-indigo-500 transition cursor-pointer"
+                      style={{ borderColor: hasVoted ? '#6366f1' : 'var(--border-color)' }}
+                    >
+                      <div 
+                        className="absolute inset-y-0 left-0 bg-indigo-500/20 transition-all duration-500" 
+                        style={{ width: `${percentage}%` }}
+                      />
+                      <div className="relative p-2 text-xs flex justify-between text-slate-300">
+                        <span>{opt.text}</span>
+                        <span className="font-bold">{percentage}%</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="text-[10px] text-slate-500 mt-2 text-right">
+                {message.poll.options.reduce((acc, curr) => acc + (curr.votes?.length || 0), 0)} votes
+              </div>
+            </div>
+          )}
+
           {/* Attachments (clickable for lightbox zoom) */}
-          {message.mediaUrl && isVisible && (
+          {message.mediaUrl && isVisible && (!message.isViewOnce || viewOnceRevealed) && (
             <img 
               src={message.mediaUrl} 
               alt="attachment" 
@@ -422,7 +574,7 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
               }}
             />
           )}
-          {message.gifUrl && isVisible && (
+          {message.gifUrl && isVisible && (!message.isViewOnce || viewOnceRevealed) && (
             <img 
               src={message.gifUrl} 
               alt="gif" 
@@ -435,7 +587,7 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
               }}
             />
           )}
-          {message.voiceUrl && isVisible && (
+          {message.voiceUrl && isVisible && (!message.isViewOnce || viewOnceRevealed) && (
             <audio src={message.voiceUrl} controls className="mt-2 h-10 w-48 rounded bg-slate-50" />
           )}
         </div>
@@ -500,6 +652,54 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
             <button 
               onClick={() => {
                 setShowActionSheet(false);
+                if (window.onStarMessage) window.onStarMessage(message._id);
+              }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: '14px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#ffffff',
+                fontWeight: 'bold',
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}
+            >
+              {message.isStarredBy?.includes(currentUser?._id) ? '⭐ Unstar' : '☆ Star'} Message
+            </button>
+
+            <button 
+              onClick={() => {
+                setShowActionSheet(false);
+                if (window.onTranslateMessage) window.onTranslateMessage(message._id, message.message);
+              }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: '14px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#ffffff',
+                fontWeight: 'bold',
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}
+            >
+              🌍 Translate to Telugu
+            </button>
+
+            <button 
+              onClick={() => {
+                setShowActionSheet(false);
                 navigator.clipboard.writeText(message.message || '');
                 navigator.vibrate?.(20);
               }}
@@ -545,6 +745,32 @@ const MessageBubble = memo(({ message, currentUser, isGrouped, onSelectUser, onH
             >
               🙈 Hide Message
             </button>
+
+            {currentUser?._id === message.sender?._id && !message.isDeleted && (
+              <button 
+                onClick={() => {
+                  setShowActionSheet(false);
+                  window.dispatchEvent(new CustomEvent('delete-message', { detail: { messageId: message._id } }));
+                }}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  borderRadius: '14px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  color: '#f87171',
+                  fontWeight: 'bold',
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                }}
+              >
+                🗑️ Delete for Everyone
+              </button>
+            )}
 
             <button 
               onClick={() => {

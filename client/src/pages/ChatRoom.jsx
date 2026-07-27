@@ -22,6 +22,9 @@ import ThemeModal from '../components/ThemeModal';
 import NewsModal from '../components/NewsModal';
 import LeaderboardsModal from '../components/LeaderboardsModal';
 import ReportModal from '../components/ReportModal';
+import StoriesBar from '../components/StoriesBar';
+import ContactSyncModal from '../components/ContactSyncModal';
+import GroupsList from '../components/GroupsList';
 import { soundSystem } from '../utils/soundSystem';
 import usePushNotification from '../hooks/usePushNotification';
 import api from '../services/api';
@@ -39,6 +42,7 @@ const ChatRoom = () => {
   const [now, setNow] = useState(Date.now());
   
   const [showOnlineSidebar, setShowOnlineSidebar] = useState(false);
+  const [showGroupSidebar, setShowGroupSidebar] = useState(false);
   const [messages, setMessages] = useState([]);
   const [hiddenMessages, setHiddenMessages] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
@@ -60,6 +64,7 @@ const ChatRoom = () => {
   const [showNews, setShowNews] = useState(false);
   const [showLeaderboards, setShowLeaderboards] = useState(false);
   const [showConnectionWarning, setShowConnectionWarning] = useState(false);
+  const [showContactSync, setShowContactSync] = useState(false);
 
   // Reporting state
   const [reportMessageData, setReportMessageData] = useState(null);
@@ -114,7 +119,12 @@ const ChatRoom = () => {
       }
     };
     window.addEventListener('open-my-profile', handleOpenProfile);
-    return () => window.removeEventListener('open-my-profile', handleOpenProfile);
+    window.onOpenContactSync = () => setShowContactSync(true);
+
+    return () => {
+      window.removeEventListener('open-my-profile', handleOpenProfile);
+      delete window.onOpenContactSync;
+    };
   }, [user]);
 
   useEffect(() => {
@@ -192,6 +202,14 @@ const ChatRoom = () => {
       ));
     });
 
+    socket.on('message-deleted', (data) => {
+      setMessages(prev => prev.map(msg => 
+        msg._id === data.messageId 
+          ? { ...msg, isDeleted: true, message: 'This message was deleted 🚫', mediaUrl: '', voiceUrl: '', gifUrl: '' }
+          : msg
+      ));
+    });
+
     socket.on('coin-earned', (data) => {
       setToastMessage(data.message);
       setTimeout(() => setToastMessage(null), 5000);
@@ -202,7 +220,7 @@ const ChatRoom = () => {
       socket.emit('leave-room', roomId);
       socket.off('connect', onConnect);
       ['chats-cleared', 'user-typing', 'user-stop-typing', 'message-rejected',
-       'system-message', 'level-up', 'activity-reward', 'moderation-event', 'reaction-updated', 'coin-earned']
+       'system-message', 'level-up', 'activity-reward', 'moderation-event', 'reaction-updated', 'message-deleted', 'coin-earned']
         .forEach(e => socket.off(e));
     };
   }, [socket, token]);
@@ -212,9 +230,18 @@ const ChatRoom = () => {
       const { messageId, emoji } = e.detail;
       socket.emit('react-message', { messageId, emoji, roomId });
     };
+    const handleDeleteMessage = (e) => {
+      const { messageId } = e.detail;
+      socket.emit('delete-message', { messageId, roomId });
+    };
     window.addEventListener('react-message', handleReactMessage);
-    return () => window.removeEventListener('react-message', handleReactMessage);
-  }, [socket]);
+    window.addEventListener('delete-message', handleDeleteMessage);
+    return () => {
+      window.removeEventListener('react-message', handleReactMessage);
+      window.removeEventListener('delete-message', handleDeleteMessage);
+    };
+  }, [socket, roomId]);
+
   useEffect(() => {
     if (!socket) return;
 
@@ -357,7 +384,13 @@ const ChatRoom = () => {
       mediaUrl: data.mediaUrl,
       gifUrl: data.gifUrl,
       voiceUrl: data.voiceUrl,
-      mentions: data.mentions || []
+      mentions: data.mentions || [],
+      replyTo: data.replyTo,
+      location: data.location,
+      contact: data.contact,
+      poll: data.poll,
+      scheduledFor: data.scheduledFor,
+      isViewOnce: data.isViewOnce
     });
   };
 
@@ -404,7 +437,7 @@ const ChatRoom = () => {
     <div className="flex flex-col font-sans overflow-hidden relative" style={{ height: `${viewportHeight}px`, backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}>
       
       {/* HEADER BAR */}
-      <header className="flex items-center justify-between px-4 h-14 z-10 border-b border-black/10 shrink-0" style={{ background: 'var(--bg-panel)' }}>
+      <header className="flex items-center justify-between px-4 h-14 z-10 border-b border-black/10 shrink-0" style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
         <div className="flex items-center gap-3">
           <button onClick={() => setShowDrawer(true)} className="p-2 hover:opacity-80 rounded-lg transition relative" style={{ color: 'var(--text-main)' }}>
             ☰
@@ -608,6 +641,9 @@ const ChatRoom = () => {
                       setShowInboxDropdown(true);
                     }
                   }},
+                  { icon: '👥', label: 'My Groups', action: () => { 
+                    setShowGroupSidebar(true);
+                  }},
                   { icon: '📰', label: 'News', hasDot: !hasSeenNews, action: () => { 
                     setShowNews(true);
                     setHasSeenNews(true);
@@ -636,6 +672,7 @@ const ChatRoom = () => {
         
         {/* CHAT MESSAGES PORT */}
         <div className="flex-1 flex flex-col overflow-hidden border-r relative" style={{ background: 'var(--bg-pattern)', backgroundColor: 'var(--bg-app)', borderColor: 'var(--border-color)' }}>
+          <StoriesBar />
           <style>{`
             @keyframes pulseGlow {
               0% { box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4); }
@@ -730,7 +767,7 @@ const ChatRoom = () => {
 
           {/* BOTTOM NAVY BLUE BAR MATCHING USER SCREENSHOT */}
           <div 
-            className="flex items-center justify-between"
+            className="hidden md:flex items-center justify-between"
             style={{ 
               background: 'var(--bg-panel)', 
               height: '46px', 
@@ -862,6 +899,30 @@ const ChatRoom = () => {
             </div>
           </>
         )}
+
+        {/* GROUPS SIDEBAR (INLINE ON DESKTOP, OVERLAY ON MOBILE) */}
+        {showGroupSidebar && (
+          <>
+            <div 
+              onClick={() => setShowGroupSidebar(false)} 
+              className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-40 cursor-pointer" 
+            />
+            <div 
+              className="fixed md:static right-0 top-0 bottom-0 z-40 md:z-auto w-72 md:w-80 flex flex-col shrink-0 bg-white border-l border-slate-200 h-full p-4"
+              style={{
+                boxShadow: 'rgba(0, 0, 0, 0.08) 0px 4px 12px'
+              }}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-bold text-slate-800 text-lg flex items-center gap-2">👥 Group Chats</h2>
+                <button onClick={() => setShowGroupSidebar(false)} className="text-slate-500 hover:text-slate-800 font-bold p-1">✕</button>
+              </div>
+              <div className="flex-1 overflow-hidden relative">
+                <GroupsList isLight={true} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Inline styles for slide-in animation */}
@@ -914,6 +975,7 @@ const ChatRoom = () => {
         />
       )}
 
+
       {/* LEVEL UP POPUP */}
       {levelUpData && (
         <LevelUpPopup
@@ -936,8 +998,15 @@ const ChatRoom = () => {
       {/* NEW MODALS */}
       {showSounds && <SoundsModal onClose={() => setShowSounds(false)} />}
       {showTheme && <ThemeModal onClose={() => setShowTheme(false)} />}
-      {showNews && <NewsModal onClose={() => setShowNews(false)} />}
-      {showLeaderboards && <LeaderboardsModal onClose={() => setShowLeaderboards(false)} onSelectUser={(username) => setFullProfileUsername(username)} token={token} />}
+      {showNews && (
+        <NewsModal onClose={() => setShowNews(false)} />
+      )}
+
+      {showLeaderboards && (
+        <LeaderboardsModal onClose={() => setShowLeaderboards(false)} onSelectUser={(username) => setFullProfileUsername(username)} token={token} />
+      )}
+
+      <ContactSyncModal isOpen={showContactSync} onClose={() => setShowContactSync(false)} />
 
       {/* MODERATION OVERLAY */}
       {moderationEvent && (

@@ -1,9 +1,29 @@
 const User = require('../models/User');
+const axios = require('axios');
+const Redis = require('ioredis');
 const { analyzeText: perspectiveAnalyze } = require('./contentModerator');
 const { addToReviewQueue } = require('./moderationQueue');
 
-// In-memory logs for speed and repeated message monitoring
-// These do not need to persist across server restarts (holds/kicks/suspensions DO persist in DB)
+const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
+
+// Helpers to seamlessly support Redis or fallback to in-memory Maps
+const getStore = async (memMap, key) => {
+  if (redis) {
+    const val = await redis.get(`mod:${key}`);
+    return val ? JSON.parse(val) : undefined;
+  }
+  return memMap.get(key);
+};
+
+const setStore = async (memMap, key, val, expirySeconds = 3600) => {
+  if (redis) {
+    await redis.set(`mod:${key}`, JSON.stringify(val), 'EX', expirySeconds);
+  } else {
+    memMap.set(key, val);
+  }
+};
+
+// In-memory logs for speed and repeated message monitoring (Fallback)
 const speedMap = new Map(); // userId -> Array of timestamps
 const historyMap = new Map(); // userId -> Array of recent message strings
 const mediaSpeedMap = new Map();
@@ -79,7 +99,7 @@ const _moderateMessageInner = async (userId, data, user, now) => {
     };
   }
 
-  const botScore = botSuspicionMap.get(userId.toString()) || 0;
+  const botScore = await getStore(botSuspicionMap, `bot_${userId.toString()}`) || 0;
 
   // Increase bot score for suspicious behavior
   let newBotScore = botScore;
@@ -87,7 +107,7 @@ const _moderateMessageInner = async (userId, data, user, now) => {
   if (message && message.length < 3) newBotScore += 1;
   if (message && /^(.)\1{8,}$/.test(message.trim())) newBotScore += 2;
 
-  botSuspicionMap.set(userId.toString(), newBotScore);
+  await setStore(botSuspicionMap, `bot_${userId.toString()}`, newBotScore, 3600);
 
   // If bot score >= 5, apply strict monitoring
   if (newBotScore >= 5) {
@@ -390,13 +410,46 @@ const _moderateMessageInner = async (userId, data, user, now) => {
     }
   }
 
-  // 4. IMAGE / MEDIA SCANNER MOCK
+  // 4. IMAGE / MEDIA SCANNER (Deep AI - Sightengine)
   if (mediaUrl && !isVoice) {
     const lowerUrl = mediaUrl.toLowerCase();
     const isImage = lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.png') || lowerUrl.endsWith('.jpeg') || lowerUrl.endsWith('.gif') || lowerUrl.includes('image');
     
     if (isImage) {
-      const isUnsafe = lowerUrl.includes('nsfw') || lowerUrl.includes('nudity') || lowerUrl.includes('gore') || lowerUrl.includes('violence') || lowerUrl.includes('explicit') || lowerUrl.includes('porn');
+      let isUnsafe = false;
+
+      // Check if Sightengine API keys are provided
+      if (process.env.SIGHTENGINE_API_USER && process.env.SIGHTENGINE_API_SECRET) {
+        try {
+          const response = await axios.get('https://api.sightengine.com/1.0/check.json', {
+            params: {
+              url: mediaUrl,
+              models: 'nudity-2.0,gore',
+              api_user: process.env.SIGHTENGINE_API_USER,
+              api_secret: process.env.SIGHTENGINE_API_SECRET
+            }
+          });
+          const data = response.data;
+          if (data.status === 'success') {
+            if (
+              data.nudity.sexual_activity > 0.5 ||
+              data.nudity.sexual_display > 0.5 ||
+              data.nudity.erotica > 0.5 ||
+              data.gore.prob > 0.5
+            ) {
+              isUnsafe = true;
+            }
+          }
+        } catch (apiError) {
+          console.error("Sightengine API Error:", apiError.message);
+          // Fallback to mock logic if API fails
+          isUnsafe = lowerUrl.includes('nsfw') || lowerUrl.includes('nudity') || lowerUrl.includes('gore') || lowerUrl.includes('violence') || lowerUrl.includes('explicit') || lowerUrl.includes('porn');
+        }
+      } else {
+        // Fallback mock logic if no keys
+        isUnsafe = lowerUrl.includes('nsfw') || lowerUrl.includes('nudity') || lowerUrl.includes('gore') || lowerUrl.includes('violence') || lowerUrl.includes('explicit') || lowerUrl.includes('porn');
+      }
+
       if (isUnsafe) {
         const unsafeCount = (user.moderation.unsafeImageCount || 0) + 1;
         user.moderation.unsafeImageCount = unsafeCount;
@@ -406,10 +459,10 @@ const _moderateMessageInner = async (userId, data, user, now) => {
           const kickTime = new Date(now + 30 * 60 * 1000);
           user.moderation.kickUntil = kickTime;
           user.moderation.kickStart = new Date();
-          user.moderation.kickReason = 'repeated unsafe media upload';
+          user.moderation.kickReason = 'repeated unsafe media upload (detected by AI)';
           user.moderation.riskLevel = 'high-risk';
           user.moderation.lastViolationAt = new Date();
-        await user.save();
+          await user.save();
           return {
             action: 'kick',
             blocked: true,
@@ -418,11 +471,11 @@ const _moderateMessageInner = async (userId, data, user, now) => {
           };
         } else {
           user.moderation.lastViolationAt = new Date();
-        await user.save();
+          await user.save();
           return {
             action: 'block_image',
             blocked: true,
-            message: '❌ This image violates platform safety rules and was not delivered.'
+            message: '❌ This image violates platform safety rules (NSFW/Gore detected) and was not delivered.'
           };
         }
       }
@@ -532,39 +585,6 @@ const _moderateMessageInner = async (userId, data, user, now) => {
           until: kickTime,
           message: `🚫 You have been removed from this room due to severe abusive language violations.`
         };
-      }
-    } else {
-      const perspectiveThreshold = user.moderation.isTrusted ? 0.85 : 0.70;
-      if (hasSmallAbuse || perspectiveScore > perspectiveThreshold) {
-        // SMALL / MODERATE ABUSE
-        const abuseCount = (user.moderation.abuseViolationsCount || 0) + 1;
-        user.moderation.abuseViolationsCount = abuseCount;
-
-        if (abuseCount === 1) {
-          // 1st time Small Abuse: Warning
-          user.moderation.lastViolationAt = new Date();
-          await user.save();
-          return {
-            action: 'warn',
-            blocked: true,
-            message: '⚠ Please maintain respectful communication.'
-          };
-        } else {
-          // Moderate Abuse: 15-min hold
-          const holdTime = new Date(now + 15 * 60 * 1000);
-          user.moderation.holdUntil = holdTime;
-          user.moderation.holdStart = new Date();
-          user.moderation.holdReason = 'abusive language';
-          user.moderation.riskLevel = 'suspicious';
-          user.moderation.lastViolationAt = new Date();
-          await user.save();
-          return {
-            action: 'hold',
-            blocked: true,
-            until: holdTime,
-            message: `⏳ Your chat privileges are temporarily restricted due to abusive language from ${formatTime(new Date())} to ${formatTime(holdTime)}.`
-          };
-        }
       }
     }
   }
@@ -710,7 +730,25 @@ const _moderateMessageInner = async (userId, data, user, now) => {
 
   await user.save();
 
-  return { action: 'allow' };
+  // --- AUTO-MASKING LOGIC (Light Toxic Words) ---
+  let finalMessage = message;
+  if (message && message.trim()) {
+    const cleanMsg = message.toLowerCase();
+    BANNED_TOXIC_SMALL.forEach(w => {
+      if (cleanMsg.includes(w)) {
+        // Create regex to match the exact word (case insensitive)
+        const regex = new RegExp(`\\b${w}\\b`, 'gi');
+        // If \b doesn't catch it due to telugu/other chars, fallback to simple replace
+        finalMessage = finalMessage.replace(regex, '***');
+        // For non-english boundary issues, we could also do simple replace if regex fails
+        if (finalMessage === message) {
+          finalMessage = finalMessage.replace(new RegExp(w, 'gi'), '***');
+        }
+      }
+    });
+  }
+
+  return { action: 'allow', maskedMessage: finalMessage !== message ? finalMessage : undefined };
 };
 
 const moderateMessage = async (userId, data) => {

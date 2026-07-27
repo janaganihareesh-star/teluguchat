@@ -109,6 +109,17 @@ const UserMenuDropdown = ({ user, onClose, onEditProfile, onOpenLevelInfo, logou
                 </span>
               </button>
 
+              {/* Sync Contacts */}
+              <button
+                onClick={() => { if(window.onOpenContactSync) window.onOpenContactSync(); onClose(); }}
+                className="w-full px-5 py-3.5 hover:bg-slate-50 flex items-center justify-between transition cursor-pointer text-left font-sans"
+              >
+                <div className="flex items-center gap-4 text-slate-600">
+                  <FaUser className="text-sky-500 text-lg" />
+                  <span className="text-sm font-semibold text-slate-700">Sync Contacts</span>
+                </div>
+              </button>
+
               <div className="border-t border-slate-100 my-2" />
 
               {/* Logout Button */}

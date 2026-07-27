@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AuthContext } from '../context/AuthContext';
+import FileUpload from './FileUpload';
+import api from '../services/api';
 
 const STICKERS = {
   cute: [
@@ -377,13 +380,31 @@ const StickerPicker = ({ onStickerSelect }) => {
     { id: 'cute', label: 'Cute 🐼', color: 'border-emerald-500 text-emerald-600' },
     { id: 'love', label: 'Love 💖', color: 'border-pink-500 text-pink-600' },
     { id: 'funny', label: 'Funny 😂', color: 'border-amber-500 text-amber-600' },
-    { id: 'sad', label: 'Sad/Shy 😢', color: 'border-purple-500 text-purple-600' },
+    { id: 'sad', label: 'Sad 😢', color: 'border-purple-500 text-purple-600' },
+    { id: 'custom', label: 'Custom ✨', color: 'border-indigo-500 text-indigo-600' },
   ];
+
+  const { user, token, updateUser } = useContext(AuthContext);
+
+  const handleUploadSticker = async (url) => {
+    try {
+      const res = await api.post('/api/users/upload-sticker', { stickerUrl: url }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // update local user context
+      updateUser({ ...user, customStickers: res.data.customStickers });
+    } catch (err) {
+      console.error('Error uploading custom sticker', err);
+    }
+  };
 
   // Get displayed stickers based on active category or search query
   const getDisplayedStickers = () => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) {
+      if (activeTab === 'custom') {
+        return (user?.customStickers || []).map((url, i) => ({ name: `Custom ${i}`, path: url }));
+      }
       return STICKERS[activeTab] || [];
     }
 
@@ -448,6 +469,14 @@ const StickerPicker = ({ onStickerSelect }) => {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Upload button for Custom Tab */}
+      {activeTab === 'custom' && (
+        <div className="mb-2 w-full p-2 bg-indigo-50/50 rounded border border-indigo-100 flex items-center justify-between">
+          <span className="text-xs text-indigo-700 font-bold">Upload Custom Sticker</span>
+          <FileUpload onFileSelected={handleUploadSticker} token={token} />
         </div>
       )}
 

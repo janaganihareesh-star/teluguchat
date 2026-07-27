@@ -1,22 +1,41 @@
-self.addEventListener('push', function(event) {
-  const data = event.data ? event.data.json() : {};
-  const title = data.title || 'TeluguChat';
-  const options = {
-    body: data.body || 'New notification',
-    icon: '/favicon.svg',
-    badge: '/favicon.svg',
-    tag: data.tag || 'default',
-    renotify: true,
-    data: data.url || '/'
-  };
+const CACHE_NAME = 'teluguchat-cache-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/favicon.svg'
+];
+
+self.addEventListener('install', event => {
   event.waitUntil(
-    self.registration.showNotification(title, options)
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(urlsToCache))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        if (response) {
+          return response;
+        }
+        return fetch(event.request);
+      })
   );
 });
 
-self.addEventListener('notificationclick', function(event) {
-  event.notification.close();
+self.addEventListener('activate', event => {
   event.waitUntil(
-    self.clients.openWindow(event.notification.data || '/')
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
   );
+  self.clients.claim();
 });

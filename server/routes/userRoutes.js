@@ -20,8 +20,15 @@ const {
   addCoins,
   sendGift,
   transferCoins,
-  getLeaderboard
-, changeEmail, changePassword, getIgnoredUsersList, uploadProfilePic, uploadCoverPhoto} = require('../controllers/userController');
+  getLeaderboard,
+  changeEmail, 
+  changePassword, 
+  getIgnoredUsersList, 
+  uploadProfilePic, 
+  uploadCoverPhoto,
+  updatePhone,
+  syncContacts
+} = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 const { moderateImage } = require('../middleware/imageModerator');
@@ -32,8 +39,11 @@ router.get('/profile/:username', protect, getProfileByUsername);
 router.put('/profile', protect, updateProfile);
 router.post('/profile-pic', protect, upload.single('file'), moderateImage, uploadProfilePic);
 router.post('/cover-photo', protect, upload.single('file'), moderateImage, uploadCoverPhoto);
+router.post('/upload-sticker', protect, require('../controllers/userController').uploadSticker);
 router.put('/change-email', protect, changeEmail);
 router.put('/change-password', protect, changePassword);
+router.post('/update-phone', protect, updatePhone);
+router.post('/sync-contacts', protect, syncContacts);
 router.get('/friends', protect, getFriendsList);
 router.get('/ignores', protect, getIgnoredUsersList);
 router.post('/friend-request/:userId', protect, sendFriendRequest);

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { FaBan, FaMicrophoneSlash, FaCrown, FaUsers, FaChartBar, FaLock, FaVolumeMute } from 'react-icons/fa';
+import { FaBan, FaMicrophoneSlash, FaCrown, FaUsers, FaChartBar, FaLock, FaVolumeMute, FaGhost, FaNetworkWired } from 'react-icons/fa';
 import api from '../services/api';
 
 const AdminPanel = () => {
@@ -125,7 +125,12 @@ const AdminPanel = () => {
                         <button onClick={() => handleAction('ban', user._id, user.username, { reason: 'Policy Violation' })} className="p-2.5 bg-red-500/10 hover:bg-red-500 text-white border border-red-500/20 rounded-xl transition text-xs" title="Ban Account">
                           <FaBan />
                         </button>
-                        
+                        <button onClick={() => handleAction('shadowban', user._id, user.username, {})} className="p-2.5 bg-purple-500/10 hover:bg-purple-500 text-purple-400 hover:text-slate-950 border border-purple-500/20 rounded-xl transition text-xs" title="Shadowban (Silent Ban)">
+                          <FaGhost />
+                        </button>
+                        <button onClick={() => handleAction('ipban', user._id, user.username, {})} className="p-2.5 bg-slate-500/10 hover:bg-slate-500 text-slate-300 hover:text-slate-950 border border-slate-500/20 rounded-xl transition text-xs" title="Ban Device/IP">
+                          <FaNetworkWired />
+                        </button>
                       </div>
                     </td>
                   </tr>

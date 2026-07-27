@@ -43,17 +43,13 @@ const NotificationBell = () => {
   }, [token, socket, addNotification, setNotifications]);
 
   const handleNotificationClick = async (notif) => {
-    if (notif.type === 'friend_request' && !notif.isRead) {
-      return;
-    }
+    if (notif.isRead) return; // If already read, do nothing
 
     try {
       await api.put(`/api/notifications/${notif._id}/read`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       markRead(notif._id);
-      setIsOpen(false);
-      if (notif.link) navigate(notif.link);
     } catch (err) {
       console.error(err);
     }

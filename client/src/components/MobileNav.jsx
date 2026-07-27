@@ -49,8 +49,10 @@ const MobileNav = () => {
   }, [token, user]);
 
   if (!isMobile) return null;
-
+  const hideOnRoutes = ['/', '/login', '/register', '/auth'];
+  if (hideOnRoutes.includes(location.pathname)) return null;
   const handleProfileClick = (e) => {
+    navigator.vibrate?.(40);
     if (location.pathname === '/chat') {
       e.preventDefault();
       window.dispatchEvent(new CustomEvent('open-my-profile'));
@@ -64,6 +66,7 @@ const MobileNav = () => {
   };
 
   const handleNotificationsClick = (e) => {
+    navigator.vibrate?.(40);
     if (location.pathname === '/chat') {
       e.preventDefault();
       window.dispatchEvent(new CustomEvent('open-notifications'));
@@ -82,15 +85,16 @@ const MobileNav = () => {
         bottom: 0,
         left: 0,
         right: 0,
-        background: 'rgba(15, 23, 42, 0.95)',
-        backdropFilter: 'blur(12px)',
+        background: 'rgba(0, 0, 0, 0.7)',
+        backdropFilter: 'blur(15px)',
+        WebkitBackdropFilter: 'blur(15px)',
         borderTop: '1px solid rgba(255, 255, 255, 0.08)',
         zIndex: 999,
         padding: '8px 12px calc(8px + env(safe-area-inset-bottom))',
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
-        boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.4)',
+        boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.5)',
         borderTopLeftRadius: '20px',
         borderTopRightRadius: '20px',
         height: '62px',
@@ -101,6 +105,7 @@ const MobileNav = () => {
       {/* 1. Home Tab */}
       <NavLink 
         to="/" 
+        onClick={() => navigator.vibrate?.(40)}
         style={({ isActive }) => ({
           display: 'flex',
           flexDirection: 'column',
@@ -121,6 +126,7 @@ const MobileNav = () => {
       {/* 2. Chat (General Room) Tab */}
       <NavLink 
         to="/chat" 
+        onClick={() => navigator.vibrate?.(40)}
         style={({ isActive }) => ({
           display: 'flex',
           flexDirection: 'column',
@@ -155,6 +161,7 @@ const MobileNav = () => {
       {/* 3. Inbox Tab */}
       <NavLink 
         to="/inbox" 
+        onClick={() => navigator.vibrate?.(40)}
         style={({ isActive }) => ({
           display: 'flex',
           flexDirection: 'column',

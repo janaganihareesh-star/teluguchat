@@ -98,20 +98,38 @@ exports.toggleReaction = async (req, res) => {
     const message = await Message.findById(id);
     if (!message) return res.status(404).json({ message: 'Message not found' });
 
-    const existingIndex = message.reactions.findIndex(
+    const existingReactionIndex = message.reactions.findIndex(
       r => r.userId.toString() === userId && r.emoji === emoji
     );
 
-    if (existingIndex > -1) {
-      message.reactions.splice(existingIndex, 1);
+    if (existingReactionIndex > -1) {
+      message.reactions.splice(existingReactionIndex, 1);
     } else {
       message.reactions.push({ userId, emoji });
     }
 
     await message.save();
-    res.status(200).json({ reactions: message.reactions });
+    res.status(200).json(message);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error toggling reaction' });
+  }
+};
+
+const translate = require('translate');
+
+exports.translateMessage = async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ message: 'No text provided' });
+    
+    // Default to Telugu for now as requested
+    translate.engine = 'google';
+    const translatedText = await translate(text, "te");
+    
+    res.status(200).json({ translatedText });
+  } catch (error) {
+    console.error('Translation error:', error);
+    res.status(500).json({ message: 'Error translating message' });
   }
 };

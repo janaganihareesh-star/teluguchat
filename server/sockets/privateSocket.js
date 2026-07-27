@@ -1,11 +1,12 @@
 const PrivateMessage = require('../models/PrivateMessage');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
+const { addToReviewQueue } = require('../utils/moderationQueue');
 
 module.exports = (io, onlineUsers) => {
   io.on('connection', (socket) => {
     socket.on('private-message', async (data) => {
-      const { senderId, receiverId, message, mediaUrl, gifUrl, voiceUrl } = data;
+      const { senderId, receiverId, message, mediaUrl, gifUrl, voiceUrl, location, contact, scheduledFor, expiresAt, isViewOnce } = data;
 
       try {
         const receiverUser = await User.findById(receiverId);
@@ -44,7 +45,7 @@ module.exports = (io, onlineUsers) => {
           return;
         }
 
-        const newMsg = new PrivateMessage({ sender: senderId, receiver: receiverId, message, mediaUrl, gifUrl, voiceUrl });
+        const newMsg = new PrivateMessage({ sender: senderId, receiver: receiverId, message, mediaUrl, gifUrl, voiceUrl, location, contact, scheduledFor, expiresAt, isViewOnce });
         await newMsg.save();
 
         let conversation = await Conversation.findOne({ participants: { $all: [senderId, receiverId] } });
@@ -58,9 +59,25 @@ module.exports = (io, onlineUsers) => {
         conversation.lastMessage = message || 'Media attachment';
         conversation.lastMessageAt = Date.now();
         const currentUnread = conversation.unreadCount.get(receiverId.toString()) || 0;
-        conversation.unreadCount.set(receiverId.toString(), currentUnread + 1);
+        const newUnreadCount = currentUnread + 1;
+        conversation.unreadCount.set(receiverId.toString(), newUnreadCount);
         
         await conversation.save();
+
+        // Behavior Profiling & Shadowbanning (Phase 1)
+        if (newUnreadCount === 10) {
+          senderUser.moderation = senderUser.moderation || {};
+          senderUser.moderation.riskLevel = 'high-risk';
+          senderUser.moderation.lastViolationAt = new Date();
+          await senderUser.save();
+          
+          addToReviewQueue(
+            senderUser._id.toString(),
+            senderUser.username,
+            'spam-behavior',
+            `User sent 10 unreciprocated private messages to ${receiverUser.username}`
+          );
+        }
 
         const receiverInfo = onlineUsers.get(receiverId.toString());
         const receiverSocketId = receiverInfo ? (typeof receiverInfo === 'string' ? receiverInfo : receiverInfo.socketId) : null;
@@ -74,6 +91,36 @@ module.exports = (io, onlineUsers) => {
       }
     });
 
+    socket.on('delete-private-message', async (data) => {
+      try {
+        const { messageId, receiverId } = data;
+        
+        // Use the authenticated user's ID
+        const senderId = socket.user?.id || (socket.request && socket.request.user ? socket.request.user.id : null);
+        if (!senderId) return;
+
+        const message = await PrivateMessage.findById(messageId);
+        if (message && message.sender.toString() === senderId.toString()) {
+          message.isDeleted = true;
+          message.deletedBy = 'user';
+          message.message = 'This message was deleted 🚫';
+          message.mediaUrl = '';
+          message.voiceUrl = '';
+          message.gifUrl = '';
+          await message.save();
+          
+          const receiverInfo = onlineUsers.get(receiverId.toString());
+          const receiverSocketId = receiverInfo ? (typeof receiverInfo === 'string' ? receiverInfo : receiverInfo.socketId) : null;
+          if (receiverSocketId) {
+            io.to(receiverSocketId).emit('private-message-deleted', { messageId });
+          }
+          socket.emit('private-message-deleted', { messageId });
+        }
+      } catch (err) {
+        console.error('Error deleting private message:', err);
+      }
+    });
+
     socket.on('typing-private', ({ senderId, receiverId }) => {
       const receiverInfo = onlineUsers.get(receiverId.toString());
       const receiverSocketId = receiverInfo ? (typeof receiverInfo === 'string' ? receiverInfo : receiverInfo.socketId) : null;
@@ -82,11 +129,57 @@ module.exports = (io, onlineUsers) => {
       }
     });
 
-    socket.on('message-read', async ({ conversationId, userId }) => {
+    socket.on('message-read', async ({ conversationId, userId, targetUserId }) => {
       const conversation = await Conversation.findById(conversationId);
       if(conversation) {
         conversation.unreadCount.set(userId, 0);
         await conversation.save();
+      }
+
+      if (targetUserId) {
+        // Mark all messages from targetUserId to userId as read
+        await PrivateMessage.updateMany(
+          { sender: targetUserId, receiver: userId, isRead: false },
+          { $set: { isRead: true } }
+        );
+
+        // Notify the sender that their messages were read
+        const senderInfo = onlineUsers.get(targetUserId.toString());
+        const senderSocketId = senderInfo ? (typeof senderInfo === 'string' ? senderInfo : senderInfo.socketId) : null;
+        if (senderSocketId) {
+          io.to(senderSocketId).emit('messages-read', { conversationId, readerId: userId });
+        }
+      }
+    });
+
+    // WebRTC Video/Audio Call Events
+    socket.on('call-user', (data) => {
+      const receiverInfo = onlineUsers.get(data.userToCall.toString());
+      const receiverSocketId = receiverInfo ? (typeof receiverInfo === 'string' ? receiverInfo : receiverInfo.socketId) : null;
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit('call-made', {
+          signal: data.signalData,
+          from: data.from, // socket id of caller
+          callerId: socket.user ? socket.user.id : data.callerId // Add user info if needed
+        });
+      }
+    });
+
+    socket.on('answer-call', (data) => {
+      const callerInfo = onlineUsers.get(data.to.toString());
+      const callerSocketId = callerInfo ? (typeof callerInfo === 'string' ? callerInfo : callerInfo.socketId) : null;
+      if (callerSocketId) {
+        io.to(callerSocketId).emit('call-accepted', data.signal);
+      }
+    });
+
+    socket.on('end-call', (data) => {
+      if (data.to) {
+        const targetInfo = onlineUsers.get(data.to.toString());
+        const targetSocketId = targetInfo ? (typeof targetInfo === 'string' ? targetInfo : targetInfo.socketId) : null;
+        if (targetSocketId) {
+          io.to(targetSocketId).emit('call-ended');
+        }
       }
     });
   });

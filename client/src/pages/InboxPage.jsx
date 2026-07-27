@@ -4,8 +4,32 @@ import { AuthContext } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import MessageBubble from '../components/MessageBubble';
 import MessageInput from '../components/MessageInput';
+import CallModal from '../components/CallModal';
+import { FaVideo } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
 import api from '../services/api';
+import CryptoJS from 'crypto-js';
+
+const generateE2EEKey = (userA, userB) => {
+  return [userA, userB].sort().join('-') + "-Teluguchat-E2EE-Key";
+};
+
+const decryptMessageText = (ciphertext, secret) => {
+  if (!ciphertext) return ciphertext;
+  if (!ciphertext.startsWith('U2FsdGVkX1')) return ciphertext; // Fallback for old plain-text messages
+  try {
+    const bytes = CryptoJS.AES.decrypt(ciphertext, secret);
+    const originalText = bytes.toString(CryptoJS.enc.Utf8);
+    return originalText || ciphertext;
+  } catch {
+    return ciphertext;
+  }
+};
+
+const encryptMessageText = (plaintext, secret) => {
+  if (!plaintext) return plaintext;
+  return CryptoJS.AES.encrypt(plaintext, secret).toString();
+};
 
 const InboxPage = () => {
   const { user, token } = useContext(AuthContext);
@@ -14,6 +38,9 @@ const InboxPage = () => {
   const [conversations, setConversations] = useState([]);
   const [activeConv, setActiveConv] = useState(null);
   const [messages, setMessages] = useState([]);
+  
+  const [callData, setCallData] = useState(null);
+  const [showCallModal, setShowCallModal] = useState(false);
 
   const openConversation = async (conv) => {
     setActiveConv(conv);
@@ -21,7 +48,17 @@ const InboxPage = () => {
       const { data } = await api.get(`/api/inbox/messages/${conv._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessages(data);
+      
+      const receiverId = conv.participants.find(p => p._id !== user._id)._id;
+      const secret = generateE2EEKey(user._id, receiverId);
+      
+      const decryptedMessages = data.map(msg => ({
+        ...msg,
+        text: decryptMessageText(msg.text || msg.message, secret),
+        message: decryptMessageText(msg.message, secret)
+      }));
+
+      setMessages(decryptedMessages);
       socket.emit('message-read', { conversationId: conv._id, userId: user._id });
     } catch (err) {
       console.error('Error opening conversation:', err);
@@ -29,6 +66,7 @@ const InboxPage = () => {
   };
 
   const [pullStartY, setPullStartY] = useState(null);
+  const [pullStartX, setPullStartX] = useState(null);
   const [pullOffset, setPullOffset] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -117,24 +155,52 @@ const InboxPage = () => {
 
     socket.on('private-message', (msg) => {
       if (activeConv && (msg.sender === activeConv._id || msg.sender._id === activeConv._id || msg.sender === user._id)) {
-        setMessages(prev => [...prev, msg]);
+        const receiverId = activeConv.participants.find(p => p._id !== user._id)._id;
+        const secret = generateE2EEKey(user._id, receiverId);
+        
+        const decryptedMsg = {
+          ...msg,
+          text: decryptMessageText(msg.text || msg.message, secret),
+          message: decryptMessageText(msg.message, secret)
+        };
+        
+        setMessages(prev => [...prev, decryptedMsg]);
       } else {
         fetchConvs();
       }
     });
 
-    return () => socket.off('private-message');
+    socket.on('call-made', (data) => {
+      setCallData(data);
+      setShowCallModal(true);
+    });
+
+    return () => {
+      socket.off('private-message');
+      socket.off('call-made');
+    };
   }, [token, activeConv, socket, user?._id, location.state]);
 
   const handleSend = (data) => {
     const receiverId = activeConv.participants.find(p => p._id !== user._id)._id;
+    const secret = generateE2EEKey(user._id, receiverId);
+    
+    // Encrypt the message text before sending to socket
+    const encryptedText = encryptMessageText(data.message, secret);
+
     socket.emit('private-message', {
       senderId: user._id,
       receiverId,
-      message: data.message,
+      message: encryptedText,
       mediaUrl: data.mediaUrl,
       gifUrl: data.gifUrl,
-      voiceUrl: data.voiceUrl
+      voiceUrl: data.voiceUrl,
+      replyTo: data.replyTo,
+      location: data.location,
+      contact: data.contact,
+      poll: data.poll,
+      scheduledFor: data.scheduledFor,
+      isViewOnce: data.isViewOnce
     });
   };
 
@@ -156,12 +222,12 @@ const InboxPage = () => {
   }
 
   return (
-    <div className="flex h-[100dvh] bg-gray-900 text-white">
+    <div className="flex h-[100dvh] bg-gray-900 text-white pb-[62px] md:pb-0">
       <div 
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="w-full md:w-1/3 border-r border-gray-700 p-4 overflow-y-auto relative"
+        className={`${activeConv ? 'hidden md:block' : 'block'} w-full md:w-1/3 border-r border-gray-700 p-4 overflow-y-auto relative shrink-0`}
       >
         {/* Pull to Refresh Indicator */}
         <div 
@@ -202,18 +268,48 @@ const InboxPage = () => {
         })}
       </div>
       
-      <div className="w-2/3 flex flex-col">
+      <div 
+        className={`${!activeConv ? 'hidden md:flex' : 'flex'} w-full md:w-2/3 flex-col relative`}
+        onTouchStart={(e) => {
+          if (e.touches.length === 1) {
+            setPullStartX(e.touches[0].clientX);
+          }
+        }}
+        onTouchMove={(e) => {
+          if (pullStartX === null) return;
+          const currentX = e.touches[0].clientX;
+          const diffX = currentX - pullStartX;
+          if (diffX > 60) {
+            // Swipe right detected
+            navigator.vibrate?.(40);
+            setActiveConv(null);
+            setPullStartX(null); // Reset
+          }
+        }}
+        onTouchEnd={() => setPullStartX(null)}
+      >
         {activeConv ? (
           <>
-            <header className="p-4 border-b border-gray-700 bg-gray-800">
-               <h3 className="text-lg font-bold">Chat with {activeConv.participants.find(p => p._id !== user._id)?.username}</h3>
+            <header className="p-4 border-b border-gray-700 flex justify-between items-center shrink-0 z-10" style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+               <div className="flex items-center gap-3">
+                 <button className="md:hidden text-gray-400 p-2" onClick={() => { navigator.vibrate?.(40); setActiveConv(null); }}>
+                   ⬅️
+                 </button>
+                 <h3 className="text-lg font-bold truncate">Chat with {activeConv.participants.find(p => p._id !== user._id)?.username}</h3>
+               </div>
+               <button 
+                 onClick={() => { setCallData(null); setShowCallModal(true); }}
+                 className="p-2 bg-blue-500/20 text-blue-400 rounded-full hover:bg-blue-500 hover:text-white transition shrink-0"
+               >
+                 <FaVideo size={18} />
+               </button>
             </header>
             <main className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.map((msg, idx) => (
                  <MessageBubble key={idx} message={msg} currentUser={user} />
               ))}
             </main>
-            <footer className="p-4 bg-gray-800">
+            <footer className="p-4 bg-gray-800 shrink-0">
                <MessageInput onSend={handleSend} roomId={activeConv._id} />
             </footer>
           </>
@@ -223,6 +319,19 @@ const InboxPage = () => {
           </div>
         )}
       </div>
+      
+      {showCallModal && (
+        <CallModal 
+          socket={socket} 
+          currentUser={user} 
+          activeConv={activeConv} 
+          callData={callData} 
+          onEndCall={() => {
+            setShowCallModal(false);
+            setCallData(null);
+          }} 
+        />
+      )}
     </div>
   );
 };

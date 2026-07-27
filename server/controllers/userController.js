@@ -98,33 +98,52 @@ exports.updateProfile = async (req, res) => {
       username: user.username,
       email: user.email,
       age: user.age,
+      customStickers: user.customStickers,
       gender: user.gender,
       country: user.country,
       profilePic: user.profilePic,
-      level: user.level,
-      badge: user.badge,
-      role: user.role,
-      
-      motto: user.motto,
-      relationshipStatus: user.relationshipStatus,
       bio: user.bio,
-      profileColor: user.profileColor,
-      coverPhoto: user.coverPhoto,
-      facebook: user.facebook,
-      instagram: user.instagram,
-      likes: user.likes,
-      likedBy: user.likedBy
+      level: user.level,
+      xp: user.xp,
+      nextLevelXp: user.nextLevelXp,
+      walletBalance: user.walletBalance,
+      theme: user.theme,
+      status: user.status,
+      token: req.token
     };
 
-    res.status(200).json({
-      message: 'Profile updated successfully',
-      user: userResponse
-    });
+    res.status(200).json(userResponse);
   } catch (error) {
     console.error('Error updating profile:', error);
     res.status(500).json({ message: 'Error updating profile' });
   }
 };
+
+exports.uploadSticker = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { stickerUrl } = req.body;
+    
+    if (!stickerUrl) {
+      return res.status(400).json({ message: 'Sticker URL is required' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.customStickers) user.customStickers = [];
+    user.customStickers.push(stickerUrl);
+    await user.save();
+
+    res.status(200).json({ customStickers: user.customStickers });
+  } catch (error) {
+    console.error('Error uploading sticker:', error);
+    res.status(500).json({ message: 'Error uploading sticker' });
+  }
+};
+
 
 // Send friend request
 exports.sendFriendRequest = async (req, res) => {
@@ -1286,5 +1305,37 @@ exports.submitAppeal = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error submitting appeal' });
+  }
+};
+
+exports.updatePhone = async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    user.phoneNumber = phoneNumber;
+    await user.save();
+    res.status(200).json({ message: 'Phone number updated successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating phone number' });
+  }
+};
+
+exports.syncContacts = async (req, res) => {
+  try {
+    const { contacts } = req.body;
+    if (!contacts || !Array.isArray(contacts)) {
+      return res.status(400).json({ message: 'Contacts array is required' });
+    }
+
+    const matchedUsers = await User.find({
+      phoneNumber: { $in: contacts },
+      _id: { $ne: req.user._id }
+    }).select('username profilePic _id phoneNumber');
+
+    res.status(200).json(matchedUsers);
+  } catch (err) {
+    res.status(500).json({ message: 'Error syncing contacts' });
   }
 };

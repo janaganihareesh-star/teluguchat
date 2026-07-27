@@ -2,6 +2,8 @@ const cron = require('node-cron');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const News = require('../models/News');
 const User = require('../models/User');
+const Message = require('../models/Message');
+const { getOrCreateSystemAdmin } = require('../utils/adminHelper');
 
 const getBirthdayUsernames = async () => {
   try {
@@ -41,10 +43,21 @@ const initDailyNewsCron = (app) => {
       const io = app.get('io');
       if (io) {
         io.emit('new-news', fallbackNews);
-        io.to('general').emit('system-message', {
-          message: `Check out the new daily announcement: <strong>${fallbackNews.title}</strong> in the News tab!`,
-          icon: '📰'
-        });
+        try {
+          const adminUser = await getOrCreateSystemAdmin();
+          if (adminUser) {
+            const sysMsg = new Message({
+              room: 'general',
+              message: `Check out the new daily announcement: <strong>${fallbackNews.title}</strong> in the News tab!`,
+              sender: adminUser._id
+            });
+            await sysMsg.save();
+            const populatedSysMsg = await Message.findById(sysMsg._id).populate('sender', 'username profilePic level badge role');
+            io.to('general').emit('receive-message', populatedSysMsg);
+          }
+        } catch (e) {
+          console.error('[Cron] Error broadcasting news message:', e);
+        }
       }
       return;
     }
@@ -117,10 +130,21 @@ const initDailyNewsCron = (app) => {
     const io = app.get('io');
     if (io) {
       io.emit('new-news', fallbackNews);
-      io.to('general').emit('system-message', {
-        message: `Check out the new daily announcement: <strong>${fallbackNews.title}</strong> in the News tab!`,
-        icon: '📰'
-      });
+      try {
+        const adminUser = await getOrCreateSystemAdmin();
+        if (adminUser) {
+          const sysMsg = new Message({
+            room: 'general',
+            message: `Check out the new daily announcement: <strong>${fallbackNews.title}</strong> in the News tab!`,
+            sender: adminUser._id
+          });
+          await sysMsg.save();
+          const populatedSysMsg = await Message.findById(sysMsg._id).populate('sender', 'username profilePic level badge role');
+          io.to('general').emit('receive-message', populatedSysMsg);
+        }
+      } catch (e) {
+        console.error('[Cron] Error broadcasting fallback news message:', e);
+      }
     }
   };
 
@@ -257,10 +281,21 @@ The response MUST be a valid JSON object matching this schema exactly, and NO ma
       const io = app.get('io');
       if (io) {
         io.emit('new-news', newNews);
-        io.to('general').emit('system-message', {
-          message: `Check out the new daily announcement: <strong>${newNews.title}</strong> in the News tab!`,
-          icon: '📰'
-        });
+        try {
+          const adminUser = await getOrCreateSystemAdmin();
+          if (adminUser) {
+            const sysMsg = new Message({
+              room: 'general',
+              message: `Check out the new daily announcement: <strong>${newNews.title}</strong> in the News tab!`,
+              sender: adminUser._id
+            });
+            await sysMsg.save();
+            const populatedSysMsg = await Message.findById(sysMsg._id).populate('sender', 'username profilePic level badge role');
+            io.to('general').emit('receive-message', populatedSysMsg);
+          }
+        } catch (e) {
+          console.error('[Cron] Error broadcasting generated news message:', e);
+        }
       }
 
     } catch (error) {

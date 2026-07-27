@@ -25,9 +25,20 @@ exports.getMessages = async (req, res) => {
     if (!conversation) return res.status(404).json({ message: 'Conversation not found' });
 
     const messages = await PrivateMessage.find({
-      $or: [
-        { sender: conversation.participants[0], receiver: conversation.participants[1] },
-        { sender: conversation.participants[1], receiver: conversation.participants[0] }
+      $and: [
+        {
+          $or: [
+            { sender: conversation.participants[0], receiver: conversation.participants[1] },
+            { sender: conversation.participants[1], receiver: conversation.participants[0] }
+          ]
+        },
+        {
+          $or: [
+            { scheduledFor: { $exists: false } },
+            { scheduledFor: null },
+            { isScheduledSent: true }
+          ]
+        }
       ]
     })
     .sort({ createdAt: 1 })

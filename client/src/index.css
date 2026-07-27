@@ -51,15 +51,15 @@
 }
 
 .theme-love {
-  --bg-app: #E28B9F;
-  --bg-panel: rgba(226, 139, 159, 0.85);
+  --bg-app: #E7818F;
+  --bg-panel: rgba(231, 129, 143, 0.85);
   --text-main: #ffffff;
   --text-muted: #fdf2f8;
   --accent: #ffe4e6;
   --border-color: rgba(255, 255, 255, 0.2);
   --bg-pattern-mobile: url('./assets/themes/love.png') center / contain no-repeat;
   --bg-pattern-desktop: url('./assets/themes/love.png') center / contain no-repeat;
-  --msg-bg: rgba(226, 139, 159, 0.75);
+  --msg-bg: rgba(231, 129, 143, 0.75);
   --msg-backdrop: blur(6px);
 }
 
@@ -90,15 +90,15 @@
 }
 
 .theme-happy {
-  --bg-app: #FCEEF3;
-  --bg-panel: rgba(252, 238, 243, 0.85);
+  --bg-app: #FDE2E9;
+  --bg-panel: rgba(253, 226, 233, 0.85);
   --text-main: #831843;
   --text-muted: #be185d;
   --accent: #f472b6;
   --border-color: rgba(244, 114, 182, 0.2);
   --bg-pattern-mobile: url('./assets/themes/happy.png') center / contain no-repeat;
   --bg-pattern-desktop: url('./assets/themes/happy.png') center / contain no-repeat;
-  --msg-bg: rgba(252, 238, 243, 0.75);
+  --msg-bg: rgba(253, 226, 233, 0.75);
   --msg-backdrop: blur(6px);
 }
 

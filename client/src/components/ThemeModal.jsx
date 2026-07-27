@@ -2,8 +2,11 @@ import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { FaBars, FaEnvelope, FaBell } from 'react-icons/fa';
 
-const ThemeModal = ({ onClose }) => {
-  const { theme, changeTheme } = useTheme();
+const ThemeModal = ({ onClose, currentTheme, onSelectTheme }) => {
+  const contextTheme = useTheme();
+  
+  const theme = currentTheme || contextTheme.theme;
+  const changeTheme = onSelectTheme || contextTheme.changeTheme;
 
   const themeOptions = [
     { id: 'theme-cody', label: 'Cody', headerBg: '#18181b', bodyBg: '#27272a', text: '#fafafa', accent: '#0ea5e9', toggleBg: '#52525b' },

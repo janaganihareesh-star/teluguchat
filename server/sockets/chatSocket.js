@@ -5,9 +5,11 @@ const Message = require('../models/Message');
 const Notification = require('../models/Notification');
 const { calculateLevel, getBadge } = require('../utils/xpSystem');
 const { moderateMessage } = require('../utils/aiModerator');
+const { getOrCreateSystemAdmin } = require('../utils/adminHelper');
 const cron = require('node-cron');
 
 const privateSocket = require('./privateSocket');
+const matchmakingSocket = require('./matchmakingSocket');
 
 const addActivityReward = async (userId, activityType, io) => {
   try {
@@ -162,32 +164,6 @@ const updateUsersEvent = async (io) => {
   }
 };
 
-const getOrCreateSystemAdmin = async () => {
-  const User = require('../models/User');
-  try {
-    let admin = await User.findOne({ role: 'admin' });
-    if (!admin) {
-      admin = await User.findOne({ username: 'Admin' });
-    }
-    if (!admin) {
-      admin = new User({
-        username: 'Admin',
-        email: 'admin@system.local',
-        password: 'system-password-placeholder-not-accessible',
-        age: 18,
-        role: 'admin',
-        level: 100,
-        gender: 'male',
-        isOnline: true
-      });
-      await admin.save();
-    }
-    return admin;
-  } catch (err) {
-    console.error('Error finding or creating system admin:', err);
-    return null;
-  }
-};
 
 // Removed old postDailyNews logic (now handled by newsGenerator.js)
 const setupAutoClear = (io) => {
@@ -232,6 +208,57 @@ const setupAutoClear = (io) => {
     }
   });
 
+  // Scheduled Messages Cron (Runs every minute)
+  const PrivateMessage = require('../models/PrivateMessage');
+  const GroupMessage = require('../models/GroupMessage');
+  const Conversation = require('../models/Conversation');
+  
+  cron.schedule('* * * * *', async () => {
+    try {
+      const now = new Date();
+      
+      // 1. Process Private Scheduled Messages
+      const privateMsgs = await PrivateMessage.find({ scheduledFor: { $lte: now }, isScheduledSent: false })
+        .populate('sender', 'username profilePic role level badge')
+        .populate('receiver', 'username profilePic');
+        
+      for (const msg of privateMsgs) {
+        msg.isScheduledSent = true;
+        await msg.save();
+        
+        // Update conversation unread count
+        let conversation = await Conversation.findOne({ participants: { $all: [msg.sender._id, msg.receiver._id] } });
+        if (conversation) {
+          conversation.lastMessage = msg.message || 'Scheduled Message';
+          conversation.lastMessageAt = Date.now();
+          const currentUnread = conversation.unreadCount.get(msg.receiver._id.toString()) || 0;
+          conversation.unreadCount.set(msg.receiver._id.toString(), currentUnread + 1);
+          await conversation.save();
+        }
+        
+        // Find if receiver is online (assuming onlineUsers is passed or global, let's just emit to their socket if possible)
+        // Wait, onlineUsers is not available in setupAutoClear unless we pass it.
+        // I will emit using the receiver's ID as room, or just emit generally and let clients filter.
+        // Actually, we can just use io.emit for private messages if they are listening, but private messages usually use socket ID.
+        // For now, let's emit a global event that clients can listen to if it's for them.
+        io.emit('private-message-scheduled', msg);
+      }
+      
+      // 2. Process Group Scheduled Messages
+      const groupMsgs = await GroupMessage.find({ scheduledFor: { $lte: now }, isScheduledSent: false })
+        .populate('sender', 'username profilePic role level gender');
+        
+      for (const msg of groupMsgs) {
+        msg.isScheduledSent = true;
+        await msg.save();
+        io.to(`group_${msg.group}`).emit('group-message', msg);
+      }
+      
+    } catch (err) {
+      console.error('[Scheduled-Messages] Error:', err);
+    }
+  });
+
   const rulesList = [
     "⚠️ System Rule: Abusive language, slurs, or harassment will result in an instant ban.",
     "⚠️ System Rule: Do not share personal information like phone numbers or exact locations here.",
@@ -267,6 +294,11 @@ const setupAutoClear = (io) => {
 module.exports = (io) => {
   // Initialize private socket messaging
   privateSocket(io, onlineUsers);
+  matchmakingSocket(io, onlineUsers);
+
+  // Initialize group socket messaging
+  const groupSocket = require('./groupSocket');
+  groupSocket(io, onlineUsers);
 
   // Start the 30-minute auto-clearing timer
   setupAutoClear(io);
@@ -374,19 +406,22 @@ module.exports = (io) => {
       const clients = await io.in(roomId).fetchSockets();
       console.log(`CLIENTS IN ROOM: ${clients.length}`);
       
-      global.hasBroadcastedJoin = global.hasBroadcastedJoin || new Set();
-      const userIdStr = socket.user.id.toString();
-      if (!global.hasBroadcastedJoin.has(userIdStr)) {
-        global.hasBroadcastedJoin.add(userIdStr);
-        try {
-          const joinedUser = await User.findById(socket.user.id);
-          if (joinedUser) {
+      try {
+        const joinedUser = await User.findById(socket.user.id);
+        if (joinedUser) {
+          const now = new Date();
+          // Only broadcast once ever per user
+          if (!joinedUser.lastJoinBroadcast) {
+            joinedUser.lastJoinBroadcast = now;
+            await joinedUser.save();
             socket.to(roomId).emit('system-message', {
               message: `<b>${joinedUser.username}</b> has joined the room`,
               icon: '🩷'
             });
           }
-        } catch (e) {}
+        }
+      } catch (e) {
+        console.error('Error broadcasting join message:', e);
       }
     });
 
@@ -498,15 +533,22 @@ module.exports = (io) => {
           });
         }
 
+        const finalMessageText = moderation.maskedMessage || message;
+        
         const newMessage = new Message({
           room: roomId,
-          message,
+          message: finalMessageText,
           mediaUrl: data.mediaUrl || '',
           voiceUrl: data.voiceUrl || '',
           gifUrl: data.gifUrl || '',
           mentions,
           sender: senderId,
           replyTo: data.replyTo || null,
+          location: data.location || null,
+          contact: data.contact || null,
+          poll: data.poll || null,
+          scheduledFor: data.scheduledFor || null,
+          isViewOnce: data.isViewOnce || false
         });
         await newMessage.save();
 
@@ -597,6 +639,88 @@ module.exports = (io) => {
             io.to(roomId).emit('receive-message', populatedMessage);
           }
         }
+        
+        // Challenge Check Logic
+        if (roomId === 'general' && global.activeChallenge && !isIgnored) {
+          if (message.toLowerCase().trim() === global.activeChallenge.answer) {
+            const wonCoins = global.activeChallenge.coins;
+            const u = await User.findById(senderId);
+            if (u) {
+              u.coins = (u.coins || 0) + wonCoins;
+              await u.save();
+              
+              // Clear the active challenge
+              global.activeChallenge = null;
+              
+              const adminUser = await getOrCreateSystemAdmin();
+              
+              const sysMsg = new Message({
+                room: 'general',
+                message: `🎉 **WINNER!** @${u.username} answered correctly and won ${wonCoins} coins!`,
+                sender: adminUser._id
+              });
+              await sysMsg.save();
+              const populatedSysMsg = await Message.findById(sysMsg._id).populate('sender', 'username profilePic level badge role');
+              io.to('general').emit('receive-message', populatedSysMsg);
+            }
+          }
+        }
+
+        // --- Blood Donation Matching Logic ---
+        if (message) {
+          const msgLower = message.toLowerCase();
+          const isBloodRequest = msgLower.includes('blood') && 
+            (msgLower.includes('urgent') || msgLower.includes('need') || 
+             msgLower.includes('kavali') || msgLower.includes('avasaram') || 
+             msgLower.includes('please') || msgLower.includes('help'));
+             
+          if (isBloodRequest) {
+            const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+            let requestedGroup = null;
+            for (const bg of bloodGroups) {
+              if (msgLower.includes(bg.toLowerCase()) || 
+                  msgLower.includes(bg.charAt(0).toLowerCase() + ' +') || 
+                  msgLower.includes(bg.charAt(0).toLowerCase() + ' positive') ||
+                  msgLower.includes(bg.charAt(0).toLowerCase() + ' -') ||
+                  msgLower.includes(bg.charAt(0).toLowerCase() + ' negative')) {
+                requestedGroup = bg;
+                break;
+              }
+            }
+
+            if (requestedGroup) {
+              setTimeout(async () => {
+                try {
+                  const adminUser = await getOrCreateSystemAdmin();
+                  if (adminUser) {
+                    const matchedUsers = await User.find({ bloodGroup: requestedGroup, isOnline: true }).select('username _id');
+                    const filteredUsers = matchedUsers.filter(u => u._id.toString() !== senderId.toString());
+                    
+                    let aiResponse = '';
+                    if (filteredUsers.length > 0) {
+                      const names = filteredUsers.map(u => `@${u.username}`).join(', ');
+                      aiResponse = `🩸 **Blood Request Matched!**\nThe following online users have **${requestedGroup}** blood group:\n${names}\n\nPlease message them directly if it is urgent!`;
+                    } else {
+                      aiResponse = `🩸 **Blood Request Alert:**\nCurrently, there are no online users with **${requestedGroup}** blood group. We request everyone to check and help if possible.`;
+                    }
+
+                    const aiMessage = new Message({
+                      room: roomId,
+                      message: aiResponse,
+                      sender: adminUser._id,
+                    });
+                    await aiMessage.save();
+                    
+                    const populatedAiMsg = await Message.findById(aiMessage._id).populate('sender', 'username profilePic level badge role');
+                    io.to(roomId).emit('receive-message', populatedAiMsg);
+                  }
+                } catch (err) {
+                  console.error('Error generating blood match reply:', err);
+                }
+              }, 1000); // Small delay to appear after the user's message
+            }
+          }
+        }
 
         // --- AI Auto-Reply Logic for @Admin ---
         if (message && message.toLowerCase().includes('@admin') && roomId === 'general') {
@@ -637,6 +761,30 @@ module.exports = (io) => {
         console.error('RoomId:', roomId);
         console.error('Socket ID:', socket.id);
         console.error('Payload:', data);
+      }
+    });
+
+    socket.on('delete-message', async (data) => {
+      try {
+        const { messageId, roomId } = data;
+        const senderId = socket.user.id;
+        
+        const Message = require('../models/Message');
+        const message = await Message.findById(messageId);
+        
+        if (message && message.sender.toString() === senderId.toString()) {
+          message.isDeleted = true;
+          message.deletedBy = 'user';
+          message.message = 'This message was deleted 🚫';
+          message.mediaUrl = '';
+          message.voiceUrl = '';
+          message.gifUrl = '';
+          await message.save();
+          
+          io.to(roomId).emit('message-deleted', { messageId });
+        }
+      } catch (err) {
+        console.error('Error deleting message:', err);
       }
     });
 

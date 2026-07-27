@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const BannedIP = require('../models/BannedIP');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
@@ -9,6 +10,10 @@ const generateOTP = () => {
 
 exports.register = async (req, res) => {
   try {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const isBanned = await BannedIP.findOne({ ipAddress: ip });
+    if (isBanned) return res.status(403).json({ message: 'Your IP has been banned from this platform.' });
+
     const { username, email, password, age, gender, country, dob } = req.body;
 
     if (age < 18) {
@@ -63,10 +68,13 @@ exports.register = async (req, res) => {
       age,
       dob,
       gender: gender ? gender.toLowerCase() : undefined,
+      bloodGroup: req.body.bloodGroup || "Don't Know",
       country,
+      publicKey: req.body.publicKey, // E2EE Addition
       otp,
       otpExpiry,
       isVerified: false,
+      ipAddresses: [ip]
     });
 
     await user.save();
@@ -122,6 +130,10 @@ exports.verifyOTP = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const isBanned = await BannedIP.findOne({ ipAddress: ip });
+    if (isBanned) return res.status(403).json({ message: 'Your IP has been banned from this platform.' });
+
     const { email, password } = req.body;
 
     // Find user by either email or username (case-insensitive)
@@ -138,6 +150,11 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
+    }
+
+    if (!user.ipAddresses.includes(ip)) {
+      user.ipAddresses.push(ip);
+      await user.save();
     }
 
     const token = jwt.sign(
@@ -173,6 +190,10 @@ exports.login = async (req, res) => {
 
 exports.guestLogin = async (req, res) => {
   try {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const isBanned = await BannedIP.findOne({ ipAddress: ip });
+    if (isBanned) return res.status(403).json({ message: 'Your IP has been banned from this platform.' });
+
     const { username, gender, age, dob } = req.body;
     
     // Generate a unique guest username and email to prevent collisions
@@ -193,6 +214,7 @@ exports.guestLogin = async (req, res) => {
       country: 'India',
       isVerified: true,
       role: 'guest',
+      ipAddresses: [ip]
     });
     
     await user.save();
@@ -225,5 +247,69 @@ exports.guestLogin = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error during guest login' });
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ message: 'User with this email does not exist.' });
+    }
+
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    await user.save();
+
+    await sendEmail({
+      email: user.email,
+      subject: 'Telugu Live Chat - Password Reset OTP',
+      message: `Your OTP for password reset is: ${otp}. It is valid for 10 minutes.`,
+    });
+
+    res.status(200).json({ message: 'OTP sent successfully to your email.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error sending OTP.' });
+  }
+};
+
+exports.verifyResetOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!user || user.otp !== otp || user.otpExpiry < new Date()) {
+      return res.status(400).json({ message: 'Invalid or expired OTP.' });
+    }
+    
+    res.status(200).json({ message: 'OTP verified successfully.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error verifying OTP.' });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!user || user.otp !== otp || user.otpExpiry < new Date()) {
+      return res.status(400).json({ message: 'Invalid or expired OTP.' });
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    await user.save();
+
+    res.status(200).json({ message: 'Password reset successfully. You can now login.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error resetting password.' });
   }
 };

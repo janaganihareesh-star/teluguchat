@@ -8,11 +8,25 @@ const userSchema = new mongoose.Schema({
   dob: { type: Date },
   infoEdited: { type: Boolean, default: false },
   gender: { type: String, enum: ['male', 'female', 'other'] },
+  bloodGroup: { type: String, enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Don\'t Know'], default: 'Don\'t Know' },
   country: { type: String },
   profilePic: { type: String, default: 'https://res.cloudinary.com/demo/image/upload/v1519759714/avatar.png' },
   bio: { type: String },
   level: { type: Number, default: 1 },
   xp: { type: Number, default: 0 },
+  nextLevelXp: { type: Number, default: 100 },
+  walletBalance: { type: Number, default: 0 },
+  theme: { type: String, default: 'light' },
+  status: { type: String, default: 'Hey there! I am using TeluguChat.' },
+  
+  // Advanced Features Additions
+  ipAddresses: [{ type: String }], // Track IPs for ban
+  publicKey: { type: String }, // RSA public key for E2EE
+  phoneNumber: { type: String }, // For contact sync
+  customStickers: [{ type: String }], // URLs of custom uploaded stickers
+  
+  // Custom Profile Additions
+  isVerified: { type: Boolean, default: false },
   coins: { type: Number, default: 0 },
   badge: { type: String, default: 'none' },
   role: { type: String, enum: ['user', 'admin', 'guest'], default: 'user' },
@@ -26,6 +40,7 @@ const userSchema = new mongoose.Schema({
   otpExpiry: { type: Date },
   isOnline: { type: Boolean, default: false },
   lastSeen: { type: Date, default: Date.now },
+  lastJoinBroadcast: { type: Date },
   createdAt: { type: Date, default: Date.now },
   motto: { type: String, default: '' },
   relationshipStatus: { type: String, enum: ['Single', 'In a relationship', 'Committed', 'Married', 'It\'s complicated', 'None'], default: 'None' },

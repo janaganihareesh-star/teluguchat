@@ -4,6 +4,8 @@ const http = require('http');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { Server } = require('socket.io');
+const { createAdapter } = require('@socket.io/redis-adapter');
+const Redis = require('ioredis');
 const connectDB = require('./config/db');
 const fs = require('fs');
 const path = require('path');
@@ -36,6 +38,22 @@ const io = new Server(server, {
 });
 
 app.set('io', io);
+
+// Redis Adapter Setup
+if (process.env.REDIS_URL) {
+  try {
+    const pubClient = new Redis(process.env.REDIS_URL);
+    const subClient = pubClient.duplicate();
+    
+    pubClient.on('error', (err) => console.error('Redis Pub Error:', err));
+    subClient.on('error', (err) => console.error('Redis Sub Error:', err));
+    
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log('✅ Redis Adapter Connected for Socket.IO');
+  } catch (err) {
+    console.error('❌ Redis Connection Failed:', err);
+  }
+}
 
 io.use(socketAuth);
 
@@ -240,10 +258,17 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/news', require('./routes/newsRoutes'));
+app.use('/api/stories', require('./routes/storyRoutes'));
+app.use('/api/groups', require('./routes/groupRoutes'));
+app.use('/api/report', require('./routes/reportRoutes'));
 
-// Initialize Daily News Cron Job
+// Initialize Cron Jobs
 const initDailyNewsCron = require('./services/dailyNewsCron');
+const initIcebreakerCron = require('./services/icebreakerCron');
+const initDailyChallengeCron = require('./services/dailyChallengeCron');
 initDailyNewsCron(app);
+initIcebreakerCron(app);
+initDailyChallengeCron(app);
 
 // Guest account cleanup — delete guests older than 1 day
 const cron = require('node-cron');
