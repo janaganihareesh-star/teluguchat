@@ -1,23 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { soundSystem } from '../utils/soundSystem';
+import { registerPushSubscription } from '../utils/pushManager';
 
 const usePushNotification = (user) => {
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
   useEffect(() => {
-    if (!user || !('serviceWorker' in navigator) || !('Notification' in window)) return;
+    if (!user || user.role === 'guest') return;
 
-    const register = async () => {
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') return;
-
-        await navigator.serviceWorker.register('/sw.js');
-        console.log('Push notification service worker registered');
-      } catch (err) {
-        console.error('Push notification setup failed:', err);
-      }
-    };
-
-    register();
+    registerPushSubscription(user).then((sub) => {
+      if (sub) setIsSubscribed(true);
+    });
   }, [user]);
 
   const sendNotification = (title, body, tag = 'default') => {
@@ -33,14 +26,13 @@ const usePushNotification = (user) => {
         tag,
         renotify: true
       });
-      // Optionally play sound directly here if not played by the chat listener
       soundSystem.notificationAlert?.();
     } catch (err) {
       console.error('Notification failed:', err);
     }
   };
 
-  return { sendNotification };
+  return { sendNotification, isSubscribed };
 };
 
 export default usePushNotification;

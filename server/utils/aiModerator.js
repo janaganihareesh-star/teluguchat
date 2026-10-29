@@ -3,6 +3,7 @@ const axios = require('axios');
 const Redis = require('ioredis');
 const { analyzeText: perspectiveAnalyze } = require('./contentModerator');
 const { addToReviewQueue } = require('./moderationQueue');
+const { transcribeAndModerateAudio } = require('../services/voiceTranscriptionService');
 
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
 
@@ -65,10 +66,33 @@ const checkRoomProtection = (userId, accountAgeDays) => {
 
 // Banned words dictionaries for Telugu and English (Mock AI classification)
 const BANNED_TOXIC_SMALL = ['idiot', 'stupid', 'duffer', 'fool', 'bewakoof', 'waste', 'cheater', 'dhed', 'lathkor'];
-const BANNED_TOXIC_HEAVY = ['kill you', 'die', 'bastard', 'bitch', 'asshole', 'motherfucker', 'abuse', 'fuck', 'dengu', 'lanja', 'munda', 'kodaka'];
+const BANNED_TOXIC_HEAVY = ['kill you', 'die', 'bastard', 'bitch', 'asshole', 'motherfucker', 'abuse', 'fuck', 'dengu', 'lanja', 'munda', 'kodaka', 'dhed', 'puku', 'modda', 'guddha', 'lanjakodaka', 'sulle', 'bolli'];
 const BANNED_NSFW_LIGHT = ['sexy', 'romance', 'hot pic', 'babe'];
 const BANNED_NSFW_HEAVY = ['porn', 'naked', 'nudity', 'sex', 'boobs', 'penis', 'vagina', 'fuck me', 'kama', 'dengulata'];
 const SCAM_KEYWORDS = ['free coins', 'double coins', 'earn cash', 'click here to win', 'get free money', 'giveaway free', 'phishing', 'telegram.me/join', 'bit.ly/', 'tinyurl.com', 'bit.ly', 't.co', 'shorturl', 'win prize', 'claim reward', 'verify account', 'free gift'];
+
+// Advanced Financial Scam & UPI Fraud Detection
+const UPI_REGEX = /[a-zA-Z0-9.\-_]{2,256}@(okhdfcbank|okaxis|oksbi|paytm|ybl|apl|ibl|upi|axl|federal|sbi)/i;
+const FINANCIAL_SCAM_KEYWORDS = ['send money', 'gpay me', 'phonepe me', 'phonepe karo', 'upi id', 'transfer cash', 'paytm karo', 'deposit money', 'crypto investment', 'doubling money', 'account number', 'ifsc code'];
+
+// Phonetic & Leetspeak Normalizer (Catches d3ngu, l@nj@, d.e.n.g.u, etc.)
+function normalizeLeetspeak(text) {
+  if (!text) return { normalized: '', collapsed: '' };
+  let str = text.toLowerCase();
+  str = str
+    .replace(/[@4^]/g, 'a')
+    .replace(/[3]/g, 'e')
+    .replace(/[1!|]/g, 'i')
+    .replace(/[0]/g, 'o')
+    .replace(/[$5]/g, 's')
+    .replace(/[7+]/g, 't')
+    .replace(/[*_~`]/g, '')
+    .replace(/(.)\1{2,}/g, '$1$1');
+
+  // Strip single-character spaces or dots: e.g. "d e n g u" -> "dengu"
+  const collapsed = str.replace(/\b([a-z])\s+([a-z])\b/g, '$1$2').replace(/\b([a-z])\.([a-z])\b/g, '$1$2');
+  return { normalized: str, collapsed };
+}
 
 /**
  * AI Moderation Engine
@@ -381,32 +405,38 @@ const _moderateMessageInner = async (userId, data, user, now) => {
     }
   }
 
-  // 3. VOICE MONITORING (Transcribe voice simulation)
+  // 3. VOICE MONITORING (Real-time Speech-to-Text with Gemini Multimodal AI)
   let analyzedText = message;
   if (isVoice && mediaUrl) {
-    // Simulate transcribing voice note
-    // If filename has keywords, simulate specific text transcripts
-    const lowerUrl = mediaUrl.toLowerCase();
-    if (lowerUrl.includes('toxic') || lowerUrl.includes('abuse')) {
-      analyzedText = "you stupid idiot";
-    } else if (lowerUrl.includes('scam') || lowerUrl.includes('cash')) {
-      analyzedText = "click here to win free coins now";
-    } else if (lowerUrl.includes('nsfw') || lowerUrl.includes('naked')) {
-      analyzedText = "want some sex and porn";
-    } else {
-      analyzedText = "hello, this is a clean Telugu voice note message.";
-    }
+    try {
+      const voiceCheck = await transcribeAndModerateAudio(mediaUrl);
+      if (voiceCheck.transcript) {
+        analyzedText = voiceCheck.transcript;
+      }
 
-    // If transcribed text is toxic/bad, block voice note
-    const isVoiceBad = BANNED_TOXIC_HEAVY.some(w => analyzedText.toLowerCase().includes(w)) ||
-                      BANNED_NSFW_HEAVY.some(w => analyzedText.toLowerCase().includes(w)) ||
-                      SCAM_KEYWORDS.some(w => analyzedText.toLowerCase().includes(w));
-    if (isVoiceBad) {
-      return {
-        action: 'block_voice',
-        blocked: true,
-        message: '❌ Voice message violates platform safety rules and was not delivered.'
-      };
+      // Check if AI flagged it or if spoken transcript contains toxic/nsfw words
+      const transcriptLower = (voiceCheck.transcript || '').toLowerCase();
+      const hasSpokenToxic = BANNED_TOXIC_HEAVY.some(w => transcriptLower.includes(w)) ||
+                             BANNED_NSFW_HEAVY.some(w => transcriptLower.includes(w)) ||
+                             SCAM_KEYWORDS.some(w => transcriptLower.includes(w));
+
+      if (!voiceCheck.isSafe || hasSpokenToxic) {
+        const blockReason = voiceCheck.reason || 'Abusive/Inappropriate audio content detected by AI';
+        addToReviewQueue(userId, user.username, 'toxic-voice-audio', `Transcript: "${voiceCheck.transcript}" | Reason: ${blockReason}`);
+
+        const abuseCount = (user.moderation.abuseViolationsCount || 0) + 1;
+        user.moderation.abuseViolationsCount = abuseCount;
+        user.moderation.lastViolationAt = new Date();
+        await user.save();
+
+        return {
+          action: 'block_voice',
+          blocked: true,
+          message: `❌ Voice message violates safety rules (${blockReason}) and was not delivered.`
+        };
+      }
+    } catch (voiceErr) {
+      console.error('[Voice Moderation Error]:', voiceErr.message);
     }
   }
 
@@ -533,13 +563,14 @@ const _moderateMessageInner = async (userId, data, user, now) => {
     }
   }
 
-  // 5. TOXICITY / ABUSE MONITORING
+  // 5. TOXICITY / ABUSE MONITORING (with Phonetic Leetspeak Normalizer)
   if (analyzedText.trim()) {
     const cleanMsg = analyzedText.toLowerCase();
+    const { normalized, collapsed } = normalizeLeetspeak(analyzedText);
 
-    // Check Local Dictionary first
-    const hasHeavyAbuse = BANNED_TOXIC_HEAVY.some(w => cleanMsg.includes(w));
-    const hasSmallAbuse = BANNED_TOXIC_SMALL.some(w => cleanMsg.includes(w));
+    // Check Local Dictionary + Normalized variations (catches d3ngu, l@nj@, etc.)
+    const hasHeavyAbuse = BANNED_TOXIC_HEAVY.some(w => cleanMsg.includes(w) || normalized.includes(w) || collapsed.includes(w));
+    const hasSmallAbuse = BANNED_TOXIC_SMALL.some(w => cleanMsg.includes(w) || normalized.includes(w) || collapsed.includes(w));
 
     // Call Perspective API as backup / verification
     let perspectiveScore = 0;
@@ -640,6 +671,21 @@ const _moderateMessageInner = async (userId, data, user, now) => {
           };
         }
       }
+    }
+  }
+
+  // 6.5 FINANCIAL SCAM & UPI FRAUD MONITORING
+  if (analyzedText.trim()) {
+    const hasUpi = UPI_REGEX.test(analyzedText);
+    const hasFinancialKeyword = FINANCIAL_SCAM_KEYWORDS.some(k => analyzedText.toLowerCase().includes(k));
+
+    if (hasUpi || hasFinancialKeyword) {
+      addToReviewQueue(userId, user.username, 'financial-scam-risk', analyzedText);
+      return {
+        action: 'warn',
+        blocked: true,
+        message: '🚨 Security Alert: Sharing unverified UPI IDs or money transfer requests is prohibited to protect community safety.'
+      };
     }
   }
 

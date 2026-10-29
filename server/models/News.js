@@ -49,6 +49,18 @@ const newsSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  poll: {
+    question: { type: String, default: null },
+    options: [{
+      text: { type: String, required: true },
+      votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    }],
+    rewardCoins: { type: Number, default: 5 }
+  },
+  audioBulletinText: {
+    type: String,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now,

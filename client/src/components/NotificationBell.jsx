@@ -43,7 +43,7 @@ const NotificationBell = () => {
   }, [token, socket, addNotification, setNotifications]);
 
   const handleNotificationClick = async (notif) => {
-    if (notif.isRead) return; // If already read, do nothing
+    if (notif.isRead) return;
 
     try {
       await api.put(`/api/notifications/${notif._id}/read`, {}, {
@@ -62,9 +62,9 @@ const NotificationBell = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       markRead(notif._id);
-      setNotifications(prev => 
-        prev.map(n => n._id === notif._id 
-          ? { ...n, isRead: true, message: `Accepted friend request from ${notif.sender?.username || 'user'}` } 
+      setNotifications(prev =>
+        prev.map(n => n._id === notif._id
+          ? { ...n, isRead: true, message: `Accepted friend request from ${notif.sender?.username || 'user'}` }
           : n
         )
       );
@@ -81,9 +81,9 @@ const NotificationBell = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       markRead(notif._id);
-      setNotifications(prev => 
-        prev.map(n => n._id === notif._id 
-          ? { ...n, isRead: true, message: `Declined friend request from ${notif.sender?.username || 'user'}` } 
+      setNotifications(prev =>
+        prev.map(n => n._id === notif._id
+          ? { ...n, isRead: true, message: `Declined friend request from ${notif.sender?.username || 'user'}` }
           : n
         )
       );
@@ -130,8 +130,8 @@ const NotificationBell = () => {
               <div className="p-6 text-center text-slate-400 text-sm font-medium">No notifications yet.</div>
             ) : (
               notifications.map((notif) => (
-                <div 
-                  key={notif._id} 
+                <div
+                  key={notif._id}
                   onClick={() => handleNotificationClick(notif)}
                   className={`p-3.5 flex flex-col gap-2 cursor-pointer hover:bg-slate-50 transition border-b border-slate-100 ${!notif.isRead ? 'bg-indigo-50/30' : ''}`}
                 >
@@ -143,16 +143,16 @@ const NotificationBell = () => {
                     </div>
                     {!notif.isRead && notif.type !== 'friend_request' && <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full mt-1.5 flex-shrink-0"></div>}
                   </div>
-                  
+
                   {notif.type === 'friend_request' && !notif.isRead && (
                     <div className="flex gap-2 justify-end w-full pl-12 mt-1">
-                      <button 
+                      <button
                         onClick={(e) => handleAcceptFriend(e, notif)}
                         className="px-3.5 py-1.5 bg-green-600 hover:bg-green-500 text-white font-extrabold rounded-lg text-xs transition cursor-pointer"
                       >
                         Accept ✅
                       </button>
-                      <button 
+                      <button
                         onClick={(e) => handleDeclineFriend(e, notif)}
                         className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold rounded-lg text-xs transition cursor-pointer"
                       >

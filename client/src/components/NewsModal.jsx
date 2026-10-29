@@ -1,10 +1,83 @@
 import React, { useState, useEffect } from 'react';
-import { FaThumbsUp, FaThumbsDown, FaHeart, FaLaughSquint, FaComment, FaCheckCircle, FaSpinner } from 'react-icons/fa';
+import { FaThumbsUp, FaThumbsDown, FaHeart, FaLaughSquint, FaComment, FaCheckCircle, FaSpinner, FaVolumeUp, FaStop, FaCoins, FaPoll } from 'react-icons/fa';
 import api from '../services/api';
 
 const NewsModal = ({ onClose }) => {
   const [newsItems, setNewsItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [activeAudioPostId, setActiveAudioPostId] = useState(null);
+  const [pollVoting, setPollVoting] = useState({});
+  const [toastMessage, setToastMessage] = useState(null);
+
+  // Stop speech when modal closes
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const handleToggleAudio = (news) => {
+    if (!('speechSynthesis' in window)) {
+      alert('Audio speech synthesis is not supported on this device.');
+      return;
+    }
+
+    if (isPlayingAudio && activeAudioPostId === news._id) {
+      window.speechSynthesis.cancel();
+      setIsPlayingAudio(false);
+      setActiveAudioPostId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    // Clean text for speech
+    const cleanText = news.audioBulletinText || `${news.title}. ${news.content.replace(/<[^>]*>/g, ' ')}`;
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 0.95;
+    utterance.pitch = 1.05;
+
+    // Pick Indian English / Telugu voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const teluguVoice = voices.find(v => v.lang.includes('te') || v.lang.includes('hi') || v.lang.includes('en-IN'));
+    if (teluguVoice) {
+      utterance.voice = teluguVoice;
+    }
+
+    utterance.onstart = () => {
+      setIsPlayingAudio(true);
+      setActiveAudioPostId(news._id);
+    };
+
+    utterance.onend = () => {
+      setIsPlayingAudio(false);
+      setActiveAudioPostId(null);
+    };
+
+    utterance.onerror = () => {
+      setIsPlayingAudio(false);
+      setActiveAudioPostId(null);
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleVotePoll = async (newsId, optionIndex) => {
+    setPollVoting(prev => ({ ...prev, [newsId]: true }));
+    try {
+      const res = await api.post(`/api/news/${newsId}/vote`, { optionIndex });
+      setNewsItems(prev => prev.map(n => n._id === newsId ? res.data.news : n));
+      setToastMessage(res.data.message);
+      setTimeout(() => setToastMessage(null), 3500);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error submitting vote');
+    } finally {
+      setPollVoting(prev => ({ ...prev, [newsId]: false }));
+    }
+  };
 
   // Reaction mapping per post
   const [reactions, setReactions] = useState({});
@@ -121,6 +194,13 @@ const NewsModal = ({ onClose }) => {
           </button>
         </div>
 
+        {/* Voting Toast */}
+        {toastMessage && (
+          <div className="bg-emerald-600 text-white text-xs font-bold px-4 py-2 text-center animate-in slide-in-from-top duration-200 shadow flex items-center justify-center gap-1.5">
+            <FaCoins /> {toastMessage}
+          </div>
+        )}
+
         {/* Scrollable Content Area */}
         <div className="overflow-y-auto flex-1 scroll-smooth bg-gray-50/50">
           <div className="p-4 space-y-6">
@@ -171,6 +251,71 @@ const NewsModal = ({ onClose }) => {
                       className="text-[0.95rem] text-gray-600 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: news.content }}
                     />
+
+                    {/* Telugu AI Radio Bulletin Button */}
+                    <div className="my-3 p-2.5 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-bold text-indigo-900">
+                        <span className="text-base">🎙️</span>
+                        <span>Telugu AI Radio Bulletin</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleAudio(news)}
+                        className={`px-3 py-1 rounded-lg text-xs font-black flex items-center gap-1.5 transition shadow-sm cursor-pointer ${
+                          isPlayingAudio && activeAudioPostId === news._id
+                            ? 'bg-red-500 text-white animate-pulse'
+                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        }`}
+                      >
+                        {isPlayingAudio && activeAudioPostId === news._id ? (
+                          <><FaStop /> Stop</>
+                        ) : (
+                          <><FaVolumeUp /> Listen Voice</>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Community Poll of the Day */}
+                    {news.poll && news.poll.question && (
+                      <div className="my-4 p-3.5 bg-slate-900 text-white rounded-xl border border-slate-800 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5 text-xs font-black text-amber-400">
+                            <FaPoll /> Community Poll
+                          </div>
+                          <span className="text-[10px] bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <FaCoins /> +{news.poll.rewardCoins || 5} Coins
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-100 mb-3">{news.poll.question}</p>
+
+                        <div className="space-y-2">
+                          {news.poll.options?.map((opt, optIdx) => {
+                            const totalVotes = news.poll.options.reduce((sum, o) => sum + (o.votes?.length || 0), 0);
+                            const optVotes = opt.votes?.length || 0;
+                            const percent = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : 0;
+
+                            return (
+                              <button
+                                key={optIdx}
+                                type="button"
+                                disabled={pollVoting[news._id]}
+                                onClick={() => handleVotePoll(news._id, optIdx)}
+                                className="w-full text-left relative overflow-hidden p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition group cursor-pointer"
+                              >
+                                <div
+                                  className="absolute inset-0 bg-indigo-600/35 transition-all duration-500"
+                                  style={{ width: `${percent}%` }}
+                                />
+                                <div className="relative flex justify-between items-center text-xs">
+                                  <span className="font-semibold text-slate-200">{opt.text}</span>
+                                  <span className="font-mono font-bold text-amber-300">{percent}% ({optVotes})</span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Reactions */}
                     <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-50">

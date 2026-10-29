@@ -2,6 +2,8 @@ const Group = require('../models/Group');
 const GroupMessage = require('../models/GroupMessage');
 const User = require('../models/User');
 const { getOrCreateSystemAdmin } = require('../utils/adminHelper');
+const { getOrCreateTeluguAIBot } = require('../utils/teluguAIHelper');
+const { generateTeluguAIReply } = require('../services/teluguAIService');
 
 module.exports = (io, onlineUsers) => {
   io.on('connection', (socket) => {
@@ -133,6 +135,44 @@ module.exports = (io, onlineUsers) => {
               }, 1000);
             }
           }
+        }
+
+        // --- TeluguAI Bot Integration in Group ---
+        const isBotMentioned = (message && (
+          message.toLowerCase().includes('@teluguai') ||
+          message.toLowerCase().startsWith('/ai')
+        ));
+
+        if (isBotMentioned) {
+          (async () => {
+            try {
+              const botUser = await getOrCreateTeluguAIBot();
+              if (!botUser) return;
+
+              const senderUser = await User.findById(senderId).select('username');
+              const botReplyText = await generateTeluguAIReply(message, senderUser?.username || 'Group Mitra', senderId);
+
+              setTimeout(async () => {
+                try {
+                  const botMsg = new GroupMessage({
+                    group: groupId,
+                    message: botReplyText,
+                    sender: botUser._id
+                  });
+                  await botMsg.save();
+
+                  const populatedBotMsg = await GroupMessage.findById(botMsg._id)
+                    .populate('sender', 'username profilePic role level gender');
+
+                  io.to(`group_${groupId}`).emit('group-message', populatedBotMsg);
+                } catch (bErr) {
+                  console.error('Error sending TeluguAI group message:', bErr);
+                }
+              }, 800);
+            } catch (botErr) {
+              console.error('Error processing TeluguAI group mention:', botErr);
+            }
+          })();
         }
       } catch (err) {
         console.error('Error sending group message:', err);

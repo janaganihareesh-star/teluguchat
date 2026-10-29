@@ -102,3 +102,33 @@ exports.banUserIp = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+const { getReviewQueue, resolveReviewItem } = require('../utils/moderationQueue');
+
+exports.getModerationQueue = async (req, res) => {
+  try {
+    const status = req.query.status || 'pending';
+    const queue = await getReviewQueue(status);
+    res.status(200).json(queue);
+  } catch (error) {
+    console.error('Error getting moderation queue:', error);
+    res.status(500).json({ message: 'Server error fetching moderation queue' });
+  }
+};
+
+exports.resolveQueueItem = async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const { action } = req.body; // 'dismiss', 'ban', 'mute', 'warning'
+    const adminId = req.user._id;
+
+    const result = await resolveReviewItem(reviewId, action, adminId);
+    if (!result) return res.status(404).json({ message: 'Review item not found' });
+
+    res.status(200).json({ message: `Review item ${action}ed successfully.`, item: result });
+  } catch (error) {
+    console.error('Error resolving queue item:', error);
+    res.status(500).json({ message: 'Server error resolving review item' });
+  }
+};
+

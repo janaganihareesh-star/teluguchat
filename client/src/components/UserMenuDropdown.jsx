@@ -120,6 +120,18 @@ const UserMenuDropdown = ({ user, onClose, onEditProfile, onOpenLevelInfo, logou
                 </div>
               </button>
 
+              {/* Telugu Sticker Maker */}
+              <button
+                onClick={() => { if (window.onOpenStickerMaker) window.onOpenStickerMaker(); onClose(); }}
+                className="w-full px-5 py-3.5 hover:bg-slate-50 flex items-center justify-between transition cursor-pointer text-left font-sans"
+              >
+                <div className="flex items-center gap-4 text-slate-600">
+                  <span className="text-lg">🎨</span>
+                  <span className="text-sm font-semibold text-slate-700">Telugu Sticker Maker</span>
+                </div>
+                <span className="text-[10px] bg-pink-100 text-pink-700 font-extrabold px-2 py-0.5 rounded-full">New</span>
+              </button>
+
               <div className="border-t border-slate-100 my-2" />
 
               {/* Logout Button */}

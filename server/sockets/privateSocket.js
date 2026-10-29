@@ -2,6 +2,7 @@ const PrivateMessage = require('../models/PrivateMessage');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
 const { addToReviewQueue } = require('../utils/moderationQueue');
+const { sendPushNotification } = require('../services/webPushService');
 
 module.exports = (io, onlineUsers) => {
   io.on('connection', (socket) => {
@@ -86,8 +87,30 @@ module.exports = (io, onlineUsers) => {
         }
         socket.emit('private-message', newMsg); // send back to sender for UI
 
+        // Background Web Push Notification to receiver
+        sendPushNotification(receiverId, {
+          title: `💬 ${senderUser.username}`,
+          body: isViewOnce ? '📷 Sent a view-once photo' : (message || (mediaUrl ? '📎 Sent an attachment' : (voiceUrl ? '🎤 Sent a voice note' : 'New private message'))),
+          icon: senderUser.profilePic || '/logo.png',
+          url: '/inbox',
+          tag: `pm-${senderId}`
+        });
+
       } catch (err) {
         console.error(err);
+      }
+    });
+
+    // Screenshot Protection Alert
+    socket.on('screenshot-taken', ({ targetUserId, senderName }) => {
+      try {
+        const targetInfo = onlineUsers.get(targetUserId.toString());
+        const targetSocketId = targetInfo ? (typeof targetInfo === 'string' ? targetInfo : targetInfo.socketId) : null;
+        if (targetSocketId) {
+          io.to(targetSocketId).emit('screenshot-alert', { byUser: senderName });
+        }
+      } catch (sErr) {
+        console.error('Error broadcasting screenshot alert:', sErr);
       }
     });
 
@@ -153,15 +176,33 @@ module.exports = (io, onlineUsers) => {
     });
 
     // WebRTC Video/Audio Call Events
-    socket.on('call-user', (data) => {
-      const receiverInfo = onlineUsers.get(data.userToCall.toString());
-      const receiverSocketId = receiverInfo ? (typeof receiverInfo === 'string' ? receiverInfo : receiverInfo.socketId) : null;
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit('call-made', {
-          signal: data.signalData,
-          from: data.from, // socket id of caller
-          callerId: socket.user ? socket.user.id : data.callerId // Add user info if needed
+    socket.on('call-user', async (data) => {
+      try {
+        const callerUser = socket.user ? await User.findById(socket.user.id).select('username profilePic') : null;
+        const callerName = callerUser?.username || 'Someone';
+
+        // Send background web push notification for incoming call
+        sendPushNotification(data.userToCall, {
+          title: `📞 Incoming Call from ${callerName}`,
+          body: 'Tap to answer video/audio call in TeluguChat',
+          icon: callerUser?.profilePic || '/logo.png',
+          url: '/chat',
+          tag: `call-${socket.user?.id}`
         });
+
+        const receiverInfo = onlineUsers.get(data.userToCall.toString());
+        const receiverSocketId = receiverInfo ? (typeof receiverInfo === 'string' ? receiverInfo : receiverInfo.socketId) : null;
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit('call-made', {
+            signal: data.signalData,
+            from: data.from,
+            callerId: socket.user ? socket.user.id : data.callerId,
+            callerName,
+            callerPic: callerUser?.profilePic
+          });
+        }
+      } catch (callErr) {
+        console.error('Error handling call-user event:', callErr);
       }
     });
 

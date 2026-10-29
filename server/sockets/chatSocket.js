@@ -6,10 +6,22 @@ const Notification = require('../models/Notification');
 const { calculateLevel, getBadge } = require('../utils/xpSystem');
 const { moderateMessage } = require('../utils/aiModerator');
 const { getOrCreateSystemAdmin } = require('../utils/adminHelper');
+const { getOrCreateTeluguAIBot } = require('../utils/teluguAIHelper');
+const { generateTeluguAIReply } = require('../services/teluguAIService');
 const cron = require('node-cron');
 
 const privateSocket = require('./privateSocket');
 const matchmakingSocket = require('./matchmakingSocket');
+
+// Room sentiment & heated argument tracker
+const roomSentimentLogs = new Map(); // roomId -> Array of { text, senderId, time }
+const roomSlowModeTimers = new Map(); // roomId -> expiry timestamp
+
+const AGGRESSIVE_KEYWORDS = [
+  'dammunte', 'chustha', 'ra ra', 'shut up', 'musuko', 'waste fellow', 
+  'nuvvu pedda', 'chepthe vinu', 'g musuko', 'kottukondi', 'fight', 
+  'cheat', 'fraud', 'podduna nunchi', 'neeku siggu', 'bastard', 'lanja'
+];
 
 const addActivityReward = async (userId, activityType, io) => {
   try {
@@ -755,6 +767,91 @@ module.exports = (io) => {
               console.error('Error generating AI reply:', err);
             }
           }, 1500); // 1.5s delay for realistic "typing" feel
+        }
+
+        // --- TeluguAI Bot Integration (@TeluguAI or /ai) ---
+        const isBotMentioned = (message && (
+          message.toLowerCase().includes('@teluguai') ||
+          message.toLowerCase().startsWith('/ai') ||
+          (mentions && mentions.some(m => m.toLowerCase().replace('@', '') === 'teluguai'))
+        ));
+
+        if (isBotMentioned && !isIgnored) {
+          (async () => {
+            try {
+              const botUser = await getOrCreateTeluguAIBot();
+              if (!botUser) return;
+
+              // Emit typing indicator for bot
+              io.to(roomId).emit('typing', { username: botUser.username, isTyping: true });
+
+              const senderUser = await User.findById(senderId).select('username');
+              const botReplyText = await generateTeluguAIReply(message, senderUser?.username || 'Mitra', senderId);
+
+              setTimeout(async () => {
+                try {
+                  const botMessage = new Message({
+                    room: roomId,
+                    message: botReplyText,
+                    sender: botUser._id,
+                    replyTo: newMessage._id
+                  });
+                  await botMessage.save();
+
+                  const populatedBotMsg = await Message.findById(botMessage._id)
+                    .populate('sender', 'username profilePic level badge role');
+
+                  io.to(roomId).emit('typing', { username: botUser.username, isTyping: false });
+                  io.to(roomId).emit('receive-message', populatedBotMsg);
+                } catch (bErr) {
+                  console.error('Error sending TeluguAI bot message:', bErr);
+                  io.to(roomId).emit('typing', { username: 'TeluguAI', isTyping: false });
+                }
+              }, 800);
+            } catch (botErr) {
+              console.error('Error processing TeluguAI mention:', botErr);
+            }
+          })();
+        }
+
+        // --- Room Sentiment & Heated Conflict Predictor ---
+        if (roomId && !isIgnored && message) {
+          const roomLogs = roomSentimentLogs.get(roomId) || [];
+          roomLogs.push({ text: message, senderId, time: Date.now() });
+          if (roomLogs.length > 12) roomLogs.shift();
+          roomSentimentLogs.set(roomId, roomLogs);
+
+          let aggressionScore = 0;
+          const msgLower = message.toLowerCase();
+          
+          if (AGGRESSIVE_KEYWORDS.some(k => msgLower.includes(k))) aggressionScore += 2;
+          if (/[!?]{2,}/.test(message)) aggressionScore += 1;
+          if (/[A-Z]{5,}/.test(message)) aggressionScore += 1;
+
+          const hasRecentConflict = roomLogs.slice(-6).filter(l => AGGRESSIVE_KEYWORDS.some(k => l.text.toLowerCase().includes(k))).length >= 2;
+
+          if ((aggressionScore >= 3 || hasRecentConflict) && (!roomSlowModeTimers.get(roomId) || Date.now() > roomSlowModeTimers.get(roomId))) {
+            roomSlowModeTimers.set(roomId, Date.now() + 60 * 1000); // 1-min cooldown before next trigger
+            
+            setTimeout(async () => {
+              try {
+                const botUser = await getOrCreateTeluguAIBot();
+                if (botUser) {
+                  const deEscalationMessage = new Message({
+                    room: roomId,
+                    message: `🕊️ **Cool babailu!** 🔥 Koncham temperature tagginchandi!\nMana TeluguChat lo racha lepadam ante navvadam, kottukovadam kaadu. Brahmanandam garu cheppinattu: *'Peace peace... Mind fresh ga unchukondi!'* 😉✌️`,
+                    sender: botUser._id
+                  });
+                  await deEscalationMessage.save();
+                  const populatedBotMsg = await Message.findById(deEscalationMessage._id)
+                    .populate('sender', 'username profilePic level badge role');
+                  io.to(roomId).emit('receive-message', populatedBotMsg);
+                }
+              } catch (e) {
+                console.error('Error sending de-escalation message:', e);
+              }
+            }, 1200);
+          }
         }
       } catch (error) {
         console.error('Error saving message:', error.message || error);

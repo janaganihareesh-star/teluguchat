@@ -125,7 +125,18 @@ const initDailyNewsCron = (app) => {
       type: "motivation",
       generatedByAI: false,
       priority: 1,
-      authorName: "AI Assistant"
+      authorName: "AI Assistant",
+      poll: {
+        question: "🎬 Daily Community Poll: Mana Telugu cinema lo mee favorite re-watch comedy movie?",
+        options: [
+          { text: "Venky (Train Scene King) 🚆", votes: [] },
+          { text: "Dookudu (Mind Block Comedy) 🔥", votes: [] },
+          { text: "Jathi Ratnalu (Full On Fun) 😂", votes: [] },
+          { text: "Manmadhudu (Classic Romance) 💖", votes: [] }
+        ],
+        rewardCoins: 5
+      },
+      audioBulletinText: `Namaskaram TeluguChat mitrulara! Eroju morning highlights: ${quote.replace(/<[^>]*>/g, '')}. Eroju mee question: ${question}. Happy chatting and have a wonderful day!`
     });
     const io = app.get('io');
     if (io) {
@@ -224,8 +235,13 @@ Write it exactly how young Telugu people chat online or talk to friends. The con
 The response MUST be a valid JSON object matching this schema exactly, and NO markdown wrapping or backticks around it:
 {
   "title": "A short engaging title for the news card (include emojis)",
-  "content": "A well-formatted string containing the content.",
-  "type": "birthday" or "festival" or "motivation"
+  "content": "A well-formatted HTML string containing Motivational Quote, Trending Telugu/AP News or Cinema Update, Question of the Day, and Song.",
+  "type": "birthday" or "festival" or "motivation",
+  "audioBulletinText": "A friendly 30-40 word spoken Telugu radio bulletin script for morning listeners.",
+  "poll": {
+    "question": "A fun engaging community poll question",
+    "options": ["Option 1", "Option 2", "Option 3"]
+  }
 }
 `;
 
@@ -265,6 +281,28 @@ The response MUST be a valid JSON object matching this schema exactly, and NO ma
       await News.deleteMany({ createdAt: { $lt: thirtyDaysAgo } });
       console.log('[Cron] Cleaned up news older than 30 days.');
 
+      // Prepare poll
+      let pollData = null;
+      if (generatedData.poll && generatedData.poll.question && Array.isArray(generatedData.poll.options)) {
+        pollData = {
+          question: generatedData.poll.question,
+          options: generatedData.poll.options.map(opt => ({ text: typeof opt === 'string' ? opt : opt.text, votes: [] })),
+          rewardCoins: 5
+        };
+      } else {
+        pollData = {
+          question: "🎬 Daily Community Poll: Mana Telugu cinema lo mee favorite re-watch comedy movie?",
+          options: [
+            { text: "Venky (Train Scene) 🚆", votes: [] },
+            { text: "Dookudu (Mind Block) 🔥", votes: [] },
+            { text: "Jathi Ratnalu (Full Fun) 😂", votes: [] }
+          ],
+          rewardCoins: 5
+        };
+      }
+
+      const audioScript = generatedData.audioBulletinText || `Namaskaram TeluguChat mitrulara! Eroju morning highlights: ${generatedData.title}. Have a lovely day and keep chatting!`;
+
       // Create new announcement in database
       const newNews = await News.create({
         title: generatedData.title,
@@ -273,6 +311,8 @@ The response MUST be a valid JSON object matching this schema exactly, and NO ma
         generatedByAI: true,
         priority: generatedData.type === 'festival' ? 2 : 1,
         authorName: 'AI Assistant',
+        poll: pollData,
+        audioBulletinText: audioScript
       });
 
       console.log(`[Cron] Successfully generated and saved daily news using ${usedModel}:`, newNews.title);

@@ -24,6 +24,15 @@ const userSchema = new mongoose.Schema({
   publicKey: { type: String }, // RSA public key for E2EE
   phoneNumber: { type: String }, // For contact sync
   customStickers: [{ type: String }], // URLs of custom uploaded stickers
+  pushSubscriptions: [{
+    endpoint: { type: String, required: true },
+    expirationTime: { type: Date, default: null },
+    keys: {
+      p256dh: { type: String, required: true },
+      auth: { type: String, required: true }
+    },
+    createdAt: { type: Date, default: Date.now }
+  }],
   
   // Custom Profile Additions
   isVerified: { type: Boolean, default: false },

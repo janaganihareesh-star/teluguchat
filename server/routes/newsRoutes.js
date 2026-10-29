@@ -43,4 +43,45 @@ router.post('/:id/reply', protect, async (req, res) => {
   }
 });
 
+// Vote on daily community poll and award 5 coins
+router.post('/:id/vote', protect, async (req, res) => {
+  try {
+    const { optionIndex } = req.body;
+    const news = await News.findById(req.params.id);
+    if (!news) return res.status(404).json({ message: 'News not found' });
+    if (!news.poll || !news.poll.options || news.poll.options.length <= optionIndex) {
+      return res.status(400).json({ message: 'Invalid poll option' });
+    }
+
+    const userId = req.user.id;
+    const alreadyVoted = news.poll.options.some(opt => opt.votes.some(v => v.toString() === userId.toString()));
+    if (alreadyVoted) {
+      return res.status(400).json({ message: 'You have already voted on this poll!' });
+    }
+
+    news.poll.options[optionIndex].votes.push(userId);
+    await news.save();
+
+    const User = require('../models/User');
+    const user = await User.findById(userId);
+    const rewardCoins = news.poll.rewardCoins || 5;
+    if (user) {
+      user.coins = (user.coins || 0) + rewardCoins;
+      await user.save();
+    }
+
+    const updatedNews = await News.findById(req.params.id)
+      .populate('replies.user', 'username profilePic');
+
+    res.json({
+      message: `Vote registered! You earned ${rewardCoins} Coins! 🎉`,
+      news: updatedNews,
+      coins: user ? user.coins : 0
+    });
+  } catch (err) {
+    console.error('Error voting on news poll:', err);
+    res.status(500).json({ message: 'Error submitting vote' });
+  }
+});
+
 module.exports = router;

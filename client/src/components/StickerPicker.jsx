@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
 import FileUpload from './FileUpload';
 import api from '../services/api';
+import StickerMakerModal from './StickerMakerModal';
 
 const STICKERS = {
   cute: [
@@ -374,6 +375,7 @@ const STICKERS = {
 const StickerPicker = ({ onStickerSelect }) => {
   const [activeTab, setActiveTab] = useState('telugu'); // Default to Telugu as requested
   const [searchQuery, setSearchQuery] = useState('');
+  const [showStickerMaker, setShowStickerMaker] = useState(false);
 
   const categories = [
     { id: 'telugu', label: 'Telugu 🎬', color: 'border-blue-500 text-blue-600' },
@@ -472,11 +474,23 @@ const StickerPicker = ({ onStickerSelect }) => {
         </div>
       )}
 
-      {/* Upload button for Custom Tab */}
+      {/* Upload & Create Sticker buttons for Custom Tab */}
       {activeTab === 'custom' && (
-        <div className="mb-2 w-full p-2 bg-indigo-50/50 rounded border border-indigo-100 flex items-center justify-between">
-          <span className="text-xs text-indigo-700 font-bold">Upload Custom Sticker</span>
-          <FileUpload onFileSelected={handleUploadSticker} token={token} />
+        <div className="mb-2 w-full p-2 bg-indigo-50/50 rounded-xl border border-indigo-100 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-indigo-700 font-bold">Custom Stickers</span>
+            <button
+              type="button"
+              onClick={() => setShowStickerMaker(true)}
+              className="text-[11px] font-black bg-gradient-to-r from-pink-500 to-indigo-600 text-white px-2.5 py-1 rounded-lg shadow-sm hover:opacity-90 flex items-center gap-1 transition"
+            >
+              🎨 Create Sticker
+            </button>
+          </div>
+          <div className="flex items-center justify-between pt-1 border-t border-indigo-100/50">
+            <span className="text-[10px] text-slate-500">Upload existing:</span>
+            <FileUpload onFileSelected={handleUploadSticker} token={token} />
+          </div>
         </div>
       )}
 
@@ -513,6 +527,14 @@ const StickerPicker = ({ onStickerSelect }) => {
           </div>
         )}
       </div>
+      {/* Sticker Maker Modal */}
+      <StickerMakerModal
+        isOpen={showStickerMaker}
+        onClose={() => setShowStickerMaker(false)}
+        onStickerCreated={(url) => {
+          onStickerSelect(url);
+        }}
+      />
     </div>
   );
 };

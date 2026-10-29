@@ -24,6 +24,7 @@ import LeaderboardsModal from '../components/LeaderboardsModal';
 import ReportModal from '../components/ReportModal';
 import StoriesBar from '../components/StoriesBar';
 import ContactSyncModal from '../components/ContactSyncModal';
+import StickerMakerModal from '../components/StickerMakerModal';
 import GroupsList from '../components/GroupsList';
 import { soundSystem } from '../utils/soundSystem';
 import usePushNotification from '../hooks/usePushNotification';
@@ -65,6 +66,12 @@ const ChatRoom = () => {
   const [showLeaderboards, setShowLeaderboards] = useState(false);
   const [showConnectionWarning, setShowConnectionWarning] = useState(false);
   const [showContactSync, setShowContactSync] = useState(false);
+  const [showStickerMaker, setShowStickerMaker] = useState(false);
+
+  useEffect(() => {
+    window.onOpenStickerMaker = () => setShowStickerMaker(true);
+    return () => { window.onOpenStickerMaker = null; };
+  }, []);
 
   // Reporting state
   const [reportMessageData, setReportMessageData] = useState(null);
@@ -1007,6 +1014,15 @@ const ChatRoom = () => {
       )}
 
       <ContactSyncModal isOpen={showContactSync} onClose={() => setShowContactSync(false)} />
+
+      {/* STICKER MAKER MODAL */}
+      <StickerMakerModal
+        isOpen={showStickerMaker}
+        onClose={() => setShowStickerMaker(false)}
+        onStickerCreated={(url) => {
+          socket?.emit('send-message', { roomId, mediaUrl: url, message: '' });
+        }}
+      />
 
       {/* MODERATION OVERLAY */}
       {moderationEvent && (
